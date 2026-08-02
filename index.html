@@ -472,6 +472,7 @@
         </div>
         <button type="submit" class="submit-btn">Sign In</button>
       </form>
+      <p style="margin-top:14px;"><a onclick="adminForgotPassword()" style="font-size:0.82rem; font-weight:600; color:var(--sage); cursor:pointer; text-decoration:underline;">Forgot password?</a></p>
       <p class="wholesale-note">Not connected yet? See the setup guide for how Kodiya links this to your Firebase account — once that's done, sign in here with the email/password he sets up for you.</p>
     </div>
 
@@ -884,6 +885,14 @@
     return false;
   }
   function adminLogout(){ firebase.auth().signOut(); }
+  function adminForgotPassword(){
+  if(!db){ alert('Firebase isn\'t connected yet — see the setup guide.'); return; }
+  const email = document.getElementById('adminEmail').value;
+  if(!email){ alert('Type your email into the Email field above first, then tap "Forgot password?" again.'); return; }
+  firebase.auth().sendPasswordResetEmail(email)
+    .then(()=> alert('Reset link sent — check ' + email + ' (including spam) for an email from Firebase.'))
+    .catch(err => alert('Could not send reset email: ' + err.message));
+  }
 
   // ===== Admin: product CRUD =====
   let editingDocId = null;
