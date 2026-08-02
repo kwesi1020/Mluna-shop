@@ -796,9 +796,8 @@
     if(!email) return;
     fbq('track', 'InitiateCheckout', {value:total, currency:'GHS', num_items:items.length});
     gtag('event', 'begin_checkout', {currency:'GHS', value:total});
-    // NOTE for MLuna: replace 'pk_test_xxxxxxxxxxxx' below with your real Paystack PUBLIC key.
     PaystackPop.setup({
-      key: 'pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+      key: 'pk_live_9136ecd40ccc704b3e337e4168138f97186bff96',
       email: email,
       amount: Math.round(total * 100),
       currency: 'GHS',
