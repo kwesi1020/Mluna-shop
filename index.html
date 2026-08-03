@@ -196,6 +196,18 @@
 
   .grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(230px,1fr)); gap:20px; padding-bottom:8px; }
   .card{ border:1px solid var(--line); border-radius:var(--radius); background:#fff; padding:20px; display:flex; flex-direction:column; gap:10px; position:relative; overflow:hidden; }
+  .card-img{ width:100%; height:170px; object-fit:cover; border-radius:var(--radius); cursor:zoom-in; margin:-20px -20px 4px; width:calc(100% + 40px); }
+
+  .product-lightbox{
+    display:none; position:fixed; inset:0; z-index:200;
+    background:rgba(20,25,16,0.92); backdrop-filter:blur(6px);
+    align-items:center; justify-content:center; padding:24px; cursor:zoom-out;
+  }
+  .product-lightbox.open{ display:flex; }
+  .product-lightbox-inner{ display:flex; flex-direction:column; align-items:center; gap:18px; max-width:100%; }
+  .product-lightbox-inner img{ max-width:min(480px, 88vw); max-height:65vh; width:auto; height:auto; border-radius:var(--radius); object-fit:contain; box-shadow:0 20px 60px rgba(0,0,0,0.5); }
+  .product-lightbox-actions{ display:flex; gap:12px; }
+  .product-lightbox-close{ background:transparent; color:#fff; border-color:rgba(255,255,255,0.6); }
   .card h3{ font-size:1.05rem; font-weight:500; margin-top:6px; }
   .card .note{ font-size:0.82rem; color:rgba(32,41,27,0.6); flex-grow:1; }
   .price-row{ display:flex; align-items:baseline; gap:8px; margin-top:auto; }
@@ -254,6 +266,11 @@
   .social-row{ display:flex; justify-content:center; gap:26px; flex-wrap:wrap; }
   .social-row a{ font-size:0.8rem; font-weight:600; letter-spacing:0.04em; text-decoration:none; color:var(--sage); border-bottom:1px solid transparent; }
   .social-row a:hover{ border-color:var(--sage); }
+
+  .qr-band{ max-width:600px; margin:64px auto 0; padding:0 24px; text-align:center; }
+  .qr-band h2{ font-size:1.4rem; margin-bottom:8px; }
+  .qr-band p{ color:rgba(32,41,27,0.6); font-size:0.88rem; margin-bottom:22px; }
+  .qr-img{ width:180px; height:180px; border:1px solid var(--line); border-radius:var(--radius); background:#fff; padding:12px; margin-bottom:20px; }
 
   .heritage-band{
     margin-top:80px; position:relative; padding:80px 24px;
@@ -349,8 +366,8 @@
         <h3>Skin Care Combo</h3>
         <p>Vitamin C, Retinol, Salicylic Acid, Vitamin E &amp; Collagen series — a complete regimen assembled for radiance, renewal, and everyday nourishment.</p>
         <div class="ritual-price">
-          <span class="price now">GHS 450.00</span>
-          <span class="price old">GHS 480.00</span>
+          <span class="price now">GHC 450.00</span>
+          <span class="price old">GHC 480.00</span>
         </div>
       </div>
       <button class="add-btn" style="width:auto; padding:14px 28px;" onclick="addToCart('skin',0,this)">Elevate Your Ritual</button>
@@ -450,82 +467,6 @@
 </div>
 
 <!-- ============ ADMIN PAGE (private — not linked in main nav) ============ -->
-<div id="page-admin" class="page">
-  <div class="wholesale-hero">
-    <div class="wholesale-hero-inner">
-      <a class="back-link" onclick="showPage('shop')">← Back to Retail Shop</a>
-      <div class="eyebrow"><div class="moon p5"></div> Store Admin</div>
-      <h1>Manage MLuna Shop</h1>
-      <p>Add new arrivals, update prices, or remove sold-out pieces. Changes appear on the live site immediately.</p>
-    </div>
-  </div>
-
-  <div class="wholesale-body">
-    <div id="adminLoggedOut">
-      <h2>Sign in</h2>
-      <form onsubmit="return adminLogin(event)" style="max-width:360px;">
-        <div style="margin-bottom:16px;">
-          <label>Email</label>
-          <input type="email" id="adminEmail" required>
-        </div>
-        <div style="margin-bottom:16px;">
-          <label>Password</label>
-          <input type="password" id="adminPass" required>
-        </div>
-        <button type="submit" class="submit-btn">Sign In</button>
-      </form>
-      <p style="margin-top:14px;"><a onclick="adminForgotPassword()" style="font-size:0.82rem; font-weight:600; color:var(--sage); cursor:pointer; text-decoration:underline;">Forgot password?</a></p>
-      <p class="wholesale-note">Not connected yet? See the setup guide for how Kodiya links this to your Firebase account — once that's done, sign in here with the email/password he sets up for you.</p>
-    </div>
-
-    <div id="adminLoggedIn" style="display:none;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
-        <h2 style="margin:0;">Products</h2>
-        <button onclick="adminLogout()" class="btn-ghost" style="padding:9px 18px; font-size:0.8rem;">Sign Out</button>
-      </div>
-
-      <form id="productForm" onsubmit="return submitProductForm(event)" style="margin-bottom:44px; border:1px solid var(--line); border-radius:var(--radius); padding:24px; background:#fff;">
-        <h3 style="margin-bottom:16px; font-size:1.1rem;">Add / Edit Product</h3>
-        <div class="form-grid">
-          <div>
-            <label>Category</label>
-            <select id="pfCategory">
-              <option value="skin">Skin & Facial Care</option>
-              <option value="hair">Hair & Beauty Accessories</option>
-              <option value="african">African Heritage</option>
-              <option value="bags">Bags & Purses</option>
-              <option value="gifts">Gift Sets</option>
-              <option value="home">Home & Lifestyle</option>
-            </select>
-          </div>
-          <div>
-            <label>Product Name</label>
-            <input type="text" id="pfName" required>
-          </div>
-          <div class="full">
-            <label>Short Description</label>
-            <input type="text" id="pfNote">
-          </div>
-          <div>
-            <label>Price (GHS)</label>
-            <input type="number" step="0.01" id="pfPrice" required>
-          </div>
-          <div>
-            <label>Was-Price (GHS, optional)</label>
-            <input type="number" step="0.01" id="pfOld">
-          </div>
-        </div>
-        <div style="display:flex; gap:10px; margin-top:6px;">
-          <button type="submit" id="pfSubmitBtn" class="submit-btn">Add Product</button>
-          <button type="button" onclick="resetProductForm()" class="btn-ghost" style="padding:15px 24px;">Clear</button>
-        </div>
-      </form>
-
-      <div id="adminProductList"></div>
-    </div>
-  </div>
-</div>
-
 <section class="capture-band">
   <div class="capture-inner">
     <h2>Stay in the loop</h2>
@@ -540,6 +481,15 @@
       <a href="https://facebook.com/mlunent" target="_blank" aria-label="Facebook">Facebook</a>
       <a href="https://tiktok.com/@mluna.entreprise" target="_blank" aria-label="TikTok">TikTok</a>
     </div>
+  </div>
+</section>
+
+<section class="qr-band">
+  <div class="qr-inner">
+    <h2>Share MLuna Shop</h2>
+    <p>Scan to open the store, or download the code to print on flyers, packaging or business cards.</p>
+    <img id="qrImg" class="qr-img" alt="QR code linking to MLuna Shop" src="">
+    <button onclick="downloadQrCode()" class="btn-primary">Download QR Code</button>
   </div>
 </section>
 
@@ -575,7 +525,7 @@
       <a href="https://tiktok.com/@mluna.entreprise" target="_blank" aria-label="TikTok">TikTok</a>
     </div>
   </div>
-  <div class="foot-bottom">MLuna Shop · +233 20 765 7029 · Makavo Junction, Accra-Lome Rd · Mon–Sat · <a onclick="showPage('admin')" style="color:rgba(246,241,230,0.5); text-decoration:underline; cursor:pointer;">Store Admin</a></div>
+  <div class="foot-bottom">MLuna Shop · +233 20 765 7029 · Makavo Junction, Accra-Lome Rd · Mon–Sat · <a href="admin.html" style="color:rgba(246,241,230,0.5); text-decoration:underline;">Store Admin</a></div>
 </footer>
 
 <div class="drawer-overlay" id="overlay" onclick="closeDrawer()"></div>
@@ -588,15 +538,24 @@
     <p class="empty-note">No items yet — tap "Secure Your Piece" on anything you like.</p>
   </div>
   <div class="drawer-foot">
-    <div class="total-row"><span>Total</span><span class="price" id="totalAmt">GHS 0.00</span></div>
+    <div class="total-row"><span>Total</span><span class="price" id="totalAmt">GHC 0.00</span></div>
     <button class="checkout-btn" onclick="sendWhatsApp()">Send Order on WhatsApp</button>
     <button class="paystack-btn" onclick="payNow()">Pay Now with Paystack</button>
     <p class="foot-note">Confirm your order on WhatsApp first — delivery and payment method (Cash, MoMo or Paystack) get sorted there.</p>
   </div>
 </div>
 
+<div class="product-lightbox" id="productLightbox" onclick="if(event.target===this) closeProductLightbox()">
+  <div class="product-lightbox-inner">
+    <img id="productLightboxImg" src="" alt="">
+    <div class="product-lightbox-actions">
+      <button onclick="downloadProductImage()" class="btn-primary">Download Photo</button>
+      <button onclick="closeProductLightbox()" class="btn-ghost product-lightbox-close">Close</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
   // ===== TODO for Kodiya: paste the real Firebase project config here =====
@@ -634,9 +593,9 @@
       {n:"8-Piece Mini Makeup Set", note:"Travel brush set", price:43, old:45},
     ],
     african: [
-      {n:"6 Yards Asante Kente", note:"Authentic weave — pricing from GHS 1,200", price:2800, old:3000},
+      {n:"6 Yards Asante Kente", note:"Authentic weave — pricing from GHC 1,200", price:2800, old:3000},
       {n:"Kente Cloth — 2 Yards", note:"High quality women's kente", price:350, old:450},
-      {n:"Quality Traditional Scarf", note:"Range GHS 50–130 depending on style", price:45, old:130},
+      {n:"Quality Traditional Scarf", note:"Range GHC 50–130 depending on style", price:45, old:130},
     ],
     bags: [
       {n:"Hand Bag", note:"Structured everyday bag", price:100, old:120},
@@ -659,12 +618,18 @@
   };
   const CATEGORY_LABELS = {skin:"Skin & Facial Care", hair:"Hair & Beauty Accessories", african:"African Heritage", bags:"Bags & Purses", gifts:"Gift Sets", home:"Home & Lifestyle"};
 
-  // Working copy — populated from Firestore when available, falls back to DEFAULT_PRODUCTS otherwise.
-  let PRODUCTS = JSON.parse(JSON.stringify(DEFAULT_PRODUCTS));
-  // Maps "cat|index" -> Firestore doc id, only populated once live data has loaded.
-  let PRODUCT_DOC_IDS = {};
-  let usingLiveData = false;
-
+  // Working copy: every starter item gets a permanent "slot key" (e.g. "skin-0") so a
+  // single edited/photographed item can go live without hiding the other 27 starters.
+  function buildBaseProducts(){
+    const base = {};
+    for(const cat in DEFAULT_PRODUCTS){
+      base[cat] = DEFAULT_PRODUCTS[cat].map((p,i) => ({
+        ...p, image:null, starterKey:cat+'-'+i, docId:null, isStarter:true
+      }));
+    }
+    return base;
+  }
+  let PRODUCTS = buildBaseProducts();
   const cart = {};
 
   function renderCatalogue(){
@@ -673,11 +638,12 @@
       if(!grid) continue;
       grid.innerHTML = PRODUCTS[cat].map((p,i) => `
         <div class="card">
+          ${p.image ? `<img src="${p.image.replace(/"/g,'&quot;')}" alt="${p.n.replace(/"/g,'&quot;')}" class="card-img" onclick="openProductLightbox('${p.image.replace(/'/g,"\\'")}','${p.n.replace(/'/g,"\\'")}')">` : ''}
           <h3>${p.n}</h3>
           <div class="note">${p.note}</div>
           <div class="price-row">
-            <span class="price price-now">GHS ${p.price.toFixed(2)}</span>
-            <span class="price price-old">GHS ${p.old.toFixed(2)}</span>
+            <span class="price price-now">GHC ${p.price.toFixed(2)}</span>
+            <span class="price price-old">GHC ${p.old.toFixed(2)}</span>
           </div>
           <button class="add-btn" id="btn-${cat}-${i}" onclick="addToCart('${cat}',${i}, this)">Secure Your Piece</button>
         </div>
@@ -687,42 +653,43 @@
     gtag('event', 'view_item_list', {item_list_name:'MLuna Shop catalogue'});
   }
 
-  // ===== Firestore live product sync =====
-  // Storefront reads are public; only signed-in admin (Mawuena) can write.
-  // If Firebase isn't configured yet, or the 'products' collection is empty,
-  // the site quietly falls back to DEFAULT_PRODUCTS above — nothing breaks.
+  // ===== Firestore live product sync (read-only here — admin.html handles writes) =====
+  // Storefront reads are public. If Firebase isn't configured yet, the site quietly
+  // runs on the 28 starter items above — nothing breaks.
   let db = null;
   function initFirebase(){
     if(!window.firebase || !firebaseConfig || firebaseConfig.apiKey.includes('YOUR_')) return;
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
     loadProductsFromFirestore();
-    firebase.auth().onAuthStateChanged(user => {
-      document.getElementById('adminLoggedOut').style.display = user ? 'none' : 'block';
-      document.getElementById('adminLoggedIn').style.display = user ? 'block' : 'none';
-      if(user) renderAdminList();
-    });
   }
 
   function loadProductsFromFirestore(){
     if(!db) return;
     db.collection('products').orderBy('sortOrder').get().then(snap => {
-      if(snap.empty) return; // keep defaults until admin adds real products
-      const grouped = {skin:[],hair:[],african:[],bags:[],gifts:[],home:[]};
-      const ids = {};
+      const base = buildBaseProducts();
+      const starterOverrides = {};
+      const newItems = {}; for(const cat in base) newItems[cat] = [];
+
       snap.forEach(doc => {
         const d = doc.data();
-        if(!grouped[d.category]) return;
-        const idx = grouped[d.category].length;
-        grouped[d.category].push({n:d.n, note:d.note||'', price:Number(d.price), old:Number(d.old||d.price)});
-        ids[d.category+'|'+idx] = doc.id;
+        const entry = {n:d.n, note:d.note||'', price:Number(d.price), old:Number(d.old||d.price), image:d.image||null, docId:doc.id, starterKey:d.starterKey||null};
+        if(d.starterKey){
+          starterOverrides[d.starterKey] = entry;
+        } else if(base[d.category]){
+          newItems[d.category].push({...entry, isStarter:false});
+        }
       });
-      PRODUCTS = grouped;
-      PRODUCT_DOC_IDS = ids;
-      usingLiveData = true;
+
+      for(const cat in base){
+        base[cat] = base[cat].map(item => {
+          const ov = starterOverrides[item.starterKey];
+          return ov ? {...item, ...ov, isStarter:false} : item;
+        }).concat(newItems[cat]);
+      }
+      PRODUCTS = base;
       renderCatalogue();
-      renderAdminList();
-    }).catch(err => console.warn('Firestore load failed, using defaults:', err));
+    }).catch(err => console.warn('Firestore load failed, using starter items:', err));
   }
 
   function addToCart(cat, i, btn){
@@ -766,13 +733,13 @@
             <button class="qty-btn" onclick="changeQty('${key}',-1)">−</button>
             <span>${item.qty}</span>
             <button class="qty-btn" onclick="changeQty('${key}',1)">+</button>
-            <span class="price">GHS ${(item.price*item.qty).toFixed(2)}</span>
+            <span class="price">GHC ${(item.price*item.qty).toFixed(2)}</span>
           </div>
         </div>`;
       }).join('');
     }
     countEl.textContent = count;
-    totalEl.textContent = 'GHS ' + total.toFixed(2);
+    totalEl.textContent = 'GHC ' + total.toFixed(2);
   }
 
   function openDrawer(){ document.getElementById('drawer').classList.add('open'); document.getElementById('overlay').classList.add('open'); }
@@ -783,8 +750,8 @@
     if(items.length === 0){ alert('Add at least one item first.'); return; }
     let msg = "Hello MLuna Shop! I'd like to order:\n\n";
     let total = 0;
-    items.forEach(it => { msg += `• ${it.n} x${it.qty} — GHS ${(it.price*it.qty).toFixed(2)}\n`; total += it.price * it.qty; });
-    msg += `\nTotal: GHS ${total.toFixed(2)}\n\nPlease confirm availability and delivery.`;
+    items.forEach(it => { msg += `• ${it.n} x${it.qty} — GHC ${(it.price*it.qty).toFixed(2)}\n`; total += it.price * it.qty; });
+    msg += `\nTotal: GHC ${total.toFixed(2)}\n\nPlease confirm availability and delivery.`;
     window.open('https://wa.me/233207657029?text=' + encodeURIComponent(msg), '_blank');
     fbq('track', 'InitiateCheckout', {value:total, currency:'GHS', num_items:items.length});
     fbq('track', 'Contact');
@@ -819,9 +786,7 @@
   function showPage(name){
     document.getElementById('page-shop').classList.toggle('active', name==='shop');
     document.getElementById('page-wholesale').classList.toggle('active', name==='wholesale');
-    document.getElementById('page-admin').classList.toggle('active', name==='admin');
     window.scrollTo({top:0, behavior:'smooth'});
-    if(name === 'admin') location.hash = 'admin'; else if(location.hash) history.replaceState(null,'',location.pathname);
   }
   function jumpTo(id){
     showPage('shop');
@@ -876,107 +841,63 @@
     return false;
   }
 
-  // ===== Admin: auth =====
-  function adminLogin(e){
-    e.preventDefault();
-    const email = document.getElementById('adminEmail').value;
-    const pass = document.getElementById('adminPass').value;
-    if(!db){ alert('Firebase isn\'t connected yet — see the setup guide.'); return false; }
-    firebase.auth().signInWithEmailAndPassword(email, pass)
-      .catch(err => alert('Login failed: ' + err.message));
-    return false;
+  // ===== Product photo lightbox + download =====
+  let currentLightboxImage = null;
+  let currentLightboxName = 'mluna-shop-product';
+  function openProductLightbox(url, name){
+    currentLightboxImage = url;
+    currentLightboxName = (name || 'mluna-shop-product').toLowerCase().replace(/[^a-z0-9]+/g,'-');
+    document.getElementById('productLightboxImg').src = url;
+    document.getElementById('productLightbox').classList.add('open');
   }
-  function adminLogout(){ firebase.auth().signOut(); }
-  function adminForgotPassword(){
-  if(!db){ alert('Firebase isn\'t connected yet — see the setup guide.'); return; }
-  const email = document.getElementById('adminEmail').value;
-  if(!email){ alert('Type your email into the Email field above first, then tap "Forgot password?" again.'); return; }
-  firebase.auth().sendPasswordResetEmail(email)
-    .then(()=> alert('Reset link sent — check ' + email + ' (including spam) for an email from Firebase.'))
-    .catch(err => alert('Could not send reset email: ' + err.message));
+  function closeProductLightbox(){
+    document.getElementById('productLightbox').classList.remove('open');
   }
-
-  // ===== Admin: product CRUD =====
-  let editingDocId = null;
-  function resetProductForm(){
-    editingDocId = null;
-    document.getElementById('pfCategory').value = 'skin';
-    document.getElementById('pfName').value = '';
-    document.getElementById('pfNote').value = '';
-    document.getElementById('pfPrice').value = '';
-    document.getElementById('pfOld').value = '';
-    document.getElementById('pfSubmitBtn').textContent = 'Add Product';
-  }
-
-  function submitProductForm(e){
-    e.preventDefault();
-    if(!db){ alert('Firebase isn\'t connected yet — see the setup guide.'); return false; }
-    const data = {
-      category: document.getElementById('pfCategory').value,
-      n: document.getElementById('pfName').value,
-      note: document.getElementById('pfNote').value,
-      price: Number(document.getElementById('pfPrice').value),
-      old: Number(document.getElementById('pfOld').value) || Number(document.getElementById('pfPrice').value),
-      sortOrder: Date.now(),
-    };
-    const action = editingDocId
-      ? db.collection('products').doc(editingDocId).update(data)
-      : db.collection('products').add(data);
-    action.then(()=>{ resetProductForm(); loadProductsFromFirestore(); })
-      .catch(err => alert('Save failed: ' + err.message));
-    return false;
-  }
-
-  function editProduct(cat, i){
-    const key = cat+'|'+i;
-    const id = PRODUCT_DOC_IDS[key];
-    if(!id){ alert('This item is still a starter/demo product — add it fresh below to start managing it live.'); return; }
-    const p = PRODUCTS[cat][i];
-    editingDocId = id;
-    document.getElementById('pfCategory').value = cat;
-    document.getElementById('pfName').value = p.n;
-    document.getElementById('pfNote').value = p.note;
-    document.getElementById('pfPrice').value = p.price;
-    document.getElementById('pfOld').value = p.old;
-    document.getElementById('pfSubmitBtn').textContent = 'Save Changes';
-    document.getElementById('productForm').scrollIntoView({behavior:'smooth'});
-  }
-
-  function deleteProduct(cat, i){
-    const key = cat+'|'+i;
-    const id = PRODUCT_DOC_IDS[key];
-    if(!id){ alert('This item is still a starter/demo product — nothing to delete in the live store yet.'); return; }
-    if(!confirm('Remove "'+PRODUCTS[cat][i].n+'" from the store?')) return;
-    db.collection('products').doc(id).delete().then(loadProductsFromFirestore);
-  }
-
-  function renderAdminList(){
-    const el = document.getElementById('adminProductList');
-    if(!el) return;
-    let html = '';
-    for(const cat in PRODUCTS){
-      html += `<h3 class="admin-cat-head">${CATEGORY_LABELS[cat]}</h3>`;
-      PRODUCTS[cat].forEach((p,i) => {
-        const isLive = !!PRODUCT_DOC_IDS[cat+'|'+i];
-        html += `
-        <div class="admin-row">
-          <div>
-            <strong>${p.n}</strong> <span class="price">GHS ${p.price.toFixed(2)}</span>
-            ${!isLive ? '<span class="demo-tag">starter item</span>' : ''}
-          </div>
-          <div class="admin-row-actions">
-            <button onclick="editProduct('${cat}',${i})">Edit</button>
-            <button onclick="deleteProduct('${cat}',${i})">Delete</button>
-          </div>
-        </div>`;
-      });
+  async function downloadProductImage(){
+    if(!currentLightboxImage) return;
+    try{
+      const res = await fetch(currentLightboxImage);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = currentLightboxName + '.jpg';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(blobUrl);
+    }catch(err){
+      window.open(currentLightboxImage, '_blank'); // fallback if fetch/blob is blocked
     }
-    el.innerHTML = html;
+  }
+
+  // ===== QR code (points at the live store — update SITE_URL once the real domain is live) =====
+  const SITE_URL = 'https://mlunashop.com/'; // TODO Kodiya: update once the real domain is connected in Vercel
+  function initQrCode(){
+    const el = document.getElementById('qrImg');
+    if(!el) return;
+    el.src = 'https://api.qrserver.com/v1/create-qr-code/?size=360x360&margin=8&data=' + encodeURIComponent(SITE_URL);
+  }
+  async function downloadQrCode(){
+    try{
+      const res = await fetch(document.getElementById('qrImg').src);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = 'mluna-shop-qr-code.png';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(blobUrl);
+    }catch(err){
+      window.open(document.getElementById('qrImg').src, '_blank');
+    }
   }
 
   renderCatalogue();
   initFirebase();
-  if(location.hash === '#admin') showPage('admin');
+  initQrCode();
 </script>
 
 </body>
