@@ -525,6 +525,7 @@
     <p class="cat-sub">Our expert-selected skincare ritual of the season.</p>
     <div class="ritual-card">
       <span class="badge-pct">SAVE<br>6%</span>
+      <img id="ritualImg" class="ritual-img" src="" alt="Skin Care Combo" style="display:none; width:140px; height:140px; object-fit:cover; border-radius:var(--radius); flex:none;">
       <div class="ritual-body">
         <span class="ritual-badge">Expert Selection</span>
         <h3>Skin Care Combo</h3>
@@ -898,6 +899,12 @@
     for(const cat in PRODUCTS){
       const grid = document.getElementById('grid-'+cat);
       if(grid) grid.innerHTML = productCardsHtml(cat);
+    }
+    const ritualP = PRODUCTS.skin && PRODUCTS.skin[0];
+    const ritualImgEl = document.getElementById('ritualImg');
+    if(ritualImgEl && ritualP && ritualP.images && ritualP.images[0]){
+      ritualImgEl.src = ritualP.images[0];
+      ritualImgEl.style.display = 'block';
     }
     if(currentCategoryPage) renderCategoryPageGrid(currentCategoryPage);
     fbq('track', 'ViewContent', {content_name:'MLuna Shop catalogue', content_type:'product_group'});
