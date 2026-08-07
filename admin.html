@@ -442,10 +442,15 @@
   let LEADS = [];
   function loadLeadsFromFirestore(){
     if(!db) return;
-    db.collection('leads').orderBy('createdAt', 'desc').limit(200).get().then(snap => {
-      LEADS = snap.docs.map(d => d.data());
-      renderLeadsList();
-    }).catch(err => console.warn('Leads load failed:', err));
+    db.collection('leads').orderBy('createdAt', 'desc').limit(200)
+      .onSnapshot(snap => {
+        LEADS = snap.docs.map(d => d.data());
+        renderLeadsList();
+      }, err => {
+        console.warn('Leads load failed:', err);
+        const el = document.getElementById('leadsList');
+        if(el) el.innerHTML = '<p style="font-size:0.85rem; color:rgba(32,41,27,0.5);">Could not load signups: ' + err.message + '</p>';
+      })
   }
   function renderLeadsList(){
     const el = document.getElementById('leadsList');
@@ -476,11 +481,16 @@
   let ORDERS = [];
   function loadOrdersFromFirestore(){
     if(!db) return;
-    db.collection('orders').orderBy('createdAt', 'desc').limit(100).get().then(snap => {
-      ORDERS = snap.docs.map(d => d.data());
-      renderOrdersList();
-    }).catch(err => console.warn('Orders load failed:', err));
-  }
+    db.collection('orders').orderBy('createdAt', 'desc').limit(100)
+      .onSnapshot(snap => {
+        ORDERS = snap.docs.map(d => d.data());
+        renderOrdersList();
+      }, err => {
+        console.warn('Orders load failed:', err);
+        const el = document.getElementById('ordersList');
+        if(el) el.innerHTML = '<p style="font-size:0.85rem; color:rgba(32,41,27,0.5);">Could not load orders: ' + err.message + '</p>';
+      });
+            }
   function renderOrdersList(){
     const el = document.getElementById('ordersList');
     if(!el) return;
