@@ -156,7 +156,9 @@
             <div id="currentPhotoThumbs" class="current-photo-thumbs"></div>
             <span>Current photos — selecting new files below replaces all of these with your new selection. Leave blank to keep the current photos.</span>
           </div>
-          <input type="file" id="pfImage" accept="image/*" multiple>
+          <input type="file" id="pfImage" accept="image/*" multiple onchange="previewSelectedPhotos()">
+          <div id="pfPhotoPreviews" class="photo-preview-list"></div>
+          <span style="font-size:0.78rem; color:rgba(32,41,27,0.55); display:block; margin-top:6px;">If this product comes in different colours, type the colour name under each photo (e.g. "Pink"). Leave blank for a plain photo with no colour option.</span>
         </div>
       </div>
       <div style="display:flex; gap:10px; margin-top:6px;">
@@ -328,6 +330,20 @@
   let editingDocId = null;
   let editingStarterKey = null;
   let editingExistingImages = [];
+  let editingExistingVariants = [];
+  let pendingPhotoFiles = [];
+
+  function previewSelectedPhotos(){
+    const files = Array.from(document.getElementById('pfImage').files);
+    pendingPhotoFiles = files;
+    const box = document.getElementById('pfPhotoPreviews');
+    if(!files.length){ box.innerHTML = ''; return; }
+    box.innerHTML = files.map((f,i) => `
+      <div class="photo-preview-item">
+        <img src="${URL.createObjectURL(f)}" alt="">
+        <input type="text" id="variantColor${i}" placeholder="Colour (optional)">
+      </div>`).join('');
+  }
 
   function resetProductForm(){
     editingDocId = null;
@@ -366,6 +382,52 @@
     const btn = document.getElementById('pfSubmitBtn');
     const originalText = btn.textContent;
     btn.disabled = true;
+
+    try{
+      const files = pendingPhotoFiles;
+      let images = editingExistingImages;
+      let variants = editingExistingVariants;
+      if(files.length){
+        images = [];
+        variants = [];
+        for(let i = 0; i < files.length; i++){
+          btn.textContent = `Uploading photo ${i+1} of ${files.length}...`;
+          const url = await uploadPhotoToCloudinary(files[i]);
+          images.push(url);
+          const colorInput = document.getElementById('variantColor'+i);
+          const colorName = colorInput ? colorInput.value.trim() : '';
+          if(colorName) variants.push({color: colorName, image: url});
+        }
+      }
+
+      btn.textContent = 'Saving...';
+      const data = {
+        category: document.getElementById('pfCategory').value,
+        n: document.getElementById('pfName').value,
+        note: document.getElementById('pfNote').value,
+        price: Number(document.getElementById('pfPrice').value),
+        old: Number(document.getElementById('pfOld').value) || Number(document.getElementById('pfPrice').value),
+        images: images,
+        variants: variants,
+        sortOrder: Date.now(),
+      };
+      if(editingStarterKey) data.starterKey = editingStarterKey;
+
+      if(editingDocId){
+        await db.collection('products').doc(editingDocId).update(data);
+      } else {
+        await db.collection('products').add(data);
+      }
+      resetProductForm();
+      loadProductsFromFirestore();
+    }catch(err){
+      alert('Save failed: ' + err.message);
+    }finally{
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+    return false;
+  }
 
     try{
       const files = Array.from(document.getElementById('pfImage').files);
@@ -411,6 +473,9 @@
     editingDocId = p.docId || null;
     editingStarterKey = p.starterKey || null;
     editingExistingImages = p.images || [];
+    editingExistingVariants = p.variants || [];
+    pendingPhotoFiles = [];
+    document.getElementById('pfPhotoPreviews').innerHTML = '';
     document.getElementById('pfCategory').value = cat;
     document.getElementById('pfName').value = p.n;
     document.getElementById('pfNote').value = p.note;
@@ -490,13 +555,12 @@
         const el = document.getElementById('ordersList');
         if(el) el.innerHTML = '<p style="font-size:0.85rem; color:rgba(32,41,27,0.5);">Could not load orders: ' + err.message + '</p>';
       });
-            }
   function renderOrdersList(){
     const el = document.getElementById('ordersList');
     if(!el) return;
     if(ORDERS.length === 0){ el.innerHTML = '<p style="font-size:0.85rem; color:rgba(32,41,27,0.5);">No orders yet.</p>'; return; }
     el.innerHTML = ORDERS.map(o => {
-      const itemsText = (o.items||[]).map(it => `${it.name} x${it.qty}`).join(', ');
+      const itemsText = (o.items||[]).map(it => `${it.name}${it.color ? ' ('+it.color+')' : ''} x${it.qty}`).join(', ');
       const date = o.createdAt ? new Date(o.createdAt).toLocaleDateString() : '';
       return `
       <div class="admin-row" style="align-items:flex-start;">
@@ -508,6 +572,32 @@
         </div>
       </div>`;
     }).join('');
+    renderColourOrdersList();
+  }
+
+  function renderColourOrdersList(){
+    const el = document.getElementById('colourOrdersList');
+    if(!el) return;
+    const rows = [];
+    ORDERS.forEach(o => {
+      const date = o.createdAt ? new Date(o.createdAt).toLocaleDateString() : '';
+      (o.items||[]).forEach(it => {
+        if(it.color){
+          rows.push({customer:o.customerName||'Unknown', phone:o.phone||'', name:it.name, color:it.color, qty:it.qty, image:it.image||null, date});
+        }
+      });
+    });
+    if(rows.length === 0){ el.innerHTML = '<p style="font-size:0.85rem; color:rgba(32,41,27,0.5);">No colour-specific orders yet.</p>'; return; }
+    el.innerHTML = rows.map(r => `
+      <div class="admin-row">
+        <div class="admin-row-left">
+          ${r.image ? `<img src="${r.image}" alt="">` : ''}
+          <div>
+            <strong>${r.name}</strong> <span class="demo-tag">${r.color}</span><br>
+            <span style="font-size:0.78rem; color:rgba(32,41,27,0.6);">${r.customer} · ${r.phone} · qty ${r.qty} · ${r.date}</span>
+          </div>
+        </div>
+      </div>`).join('');
   }
 
   function renderAdminList(){
