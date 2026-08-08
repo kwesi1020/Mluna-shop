@@ -386,11 +386,57 @@
   }
 
   async function submitProductForm(e){
-    e.preventDefault();
-    if(!db){ alert('Firebase isn\'t connected yet — see the setup guide.'); return false; }
-    const btn = document.getElementById('pfSubmitBtn');
-    const originalText = btn.textContent;
-    btn.disabled = true;
+  e.preventDefault();
+  if(!db){ alert('Firebase isn\'t connected yet — see the setup guide.'); return false; }
+  const btn = document.getElementById('pfSubmitBtn');
+  const originalText = btn.textContent;
+  btn.disabled = true;
+
+  try{
+    const files = pendingPhotoFiles;
+    let images = editingExistingImages;
+    let variants = editingExistingVariants;
+    if(files.length){
+      images = [];
+      variants = [];
+      for(let i = 0; i < files.length; i++){
+        btn.textContent = `Uploading photo ${i+1} of ${files.length}...`;
+        const url = await uploadPhotoToCloudinary(files[i]);
+        images.push(url);
+        const colorInput = document.getElementById('variantColor'+i);
+        const colorName = colorInput ? colorInput.value.trim() : '';
+        if(colorName) variants.push({color: colorName, image: url});
+      }
+    }
+
+    btn.textContent = 'Saving...';
+    const data = {
+      category: document.getElementById('pfCategory').value,
+      n: document.getElementById('pfName').value,
+      note: document.getElementById('pfNote').value,
+      price: Number(document.getElementById('pfPrice').value),
+      old: Number(document.getElementById('pfOld').value) || Number(document.getElementById('pfPrice').value),
+      images: images,
+      variants: variants,
+      sortOrder: Date.now(),
+    };
+    if(editingStarterKey) data.starterKey = editingStarterKey;
+
+    if(editingDocId){
+      await db.collection('products').doc(editingDocId).update(data);
+    } else {
+      await db.collection('products').add(data);
+    }
+    resetProductForm();
+    loadProductsFromFirestore();
+  }catch(err){
+    alert('Save failed: ' + err.message);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+  return false;
+  }
 
     try{
       const files = pendingPhotoFiles;
