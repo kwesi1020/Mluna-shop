@@ -78,7 +78,10 @@
 
 <link rel="icon" href="assets/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Work+Sans:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Work+Sans:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"> .photo-preview-list{ display:flex; flex-wrap:wrap; gap:12px; margin-top:10px; }
+.photo-preview-item{ width:96px; }
+.photo-preview-item img{ width:96px; height:96px; object-fit:cover; border-radius:var(--radius); border:1px solid var(--line); display:block; margin-bottom:6px; }
+.photo-preview-item input{ padding:8px 10px; font-size:0.76rem; }
 <style>
   :root{
     --cream:#F6F1E6;
@@ -438,6 +441,9 @@
   .review-quote{ font-family:'Fraunces', serif; font-size:clamp(1.2rem, 2.6vw, 1.7rem); line-height:1.35; }
   .review-author{ margin-top:16px; font-size:0.85rem; color:var(--sage); }
   @media (max-width:860px){ .review-band{ grid-template-columns:1fr; } }
+  .variant-row{ display:flex; gap:6px; flex-wrap:wrap; margin:2px 0; }
+  .variant-dot{ width:22px; height:22px; border-radius:50%; background-size:cover; background-position:center; border:2px solid transparent; cursor:pointer; flex:none; }
+  .variant-dot.active{ border-color:var(--gold); box-shadow:0 0 0 1px var(--gold); }
 </style>
 </head>
 <body>
@@ -851,6 +857,7 @@
   }
   let PRODUCTS = buildBaseProducts();
   const cart = {};
+  let selectedVariantIndex = {};
 
   const CATEGORY_PAGE_INFO = {
     skin: {title:'Beauty & Skincare', sub:'Sadoer series, cleansing tools and combo sets — formulated for radiance and vitality.'},
@@ -872,16 +879,24 @@
 
   function productCardHtml(cat, i){
     const p = PRODUCTS[cat][i];
-    const cover = (p.images && p.images[0]) ? p.images[0] : null;
+    const key = cat+'|'+i;
+    const hasVariants = p.variants && p.variants.length > 0;
+    const vIdx = selectedVariantIndex[key] || 0;
+    const cover = hasVariants ? p.variants[vIdx].image : ((p.images && p.images[0]) ? p.images[0] : null);
     const imgHtml = cover
-      ? `<img src="${cover.replace(/"/g,'&quot;')}" alt="${p.n.replace(/"/g,'&quot;')}" class="card-img" onclick="openProductLightbox('${cat}',${i})">`
+      ? `<img id="cardimg-${cat}-${i}" src="${cover.replace(/"/g,'&quot;')}" alt="${p.n.replace(/"/g,'&quot;')}" class="card-img" onclick="openProductLightbox('${cat}',${i})">`
       : `<div class="card-img-placeholder">${p.n.replace(/"/g,'&quot;')}</div>`;
+    const variantHtml = hasVariants ? `
+        <div class="variant-row" id="variants-${cat}-${i}">
+          ${p.variants.map((v,vi) => `<span class="variant-dot${vi===vIdx?' active':''}" title="${v.color.replace(/"/g,'&quot;')}" style="background-image:url('${v.image.replace(/'/g,"%27")}')" onclick="event.stopPropagation(); selectVariant('${cat}',${i},${vi},this)"></span>`).join('')}
+        </div>` : '';
     return `
       <div class="card">
         ${imgHtml}
         <div class="card-body">
           <h3>${p.n}</h3>
           <div class="note">${p.note}</div>
+          ${variantHtml}
           <div class="price-row">
             <span class="price price-now">GHC ${p.price.toFixed(2)}</span>
             <span class="price price-old">GHC ${p.old.toFixed(2)}</span>
@@ -889,6 +904,19 @@
           <button class="add-btn" id="btn-${cat}-${i}" onclick="addToCart('${cat}',${i}, this)">Secure Your Piece</button>
         </div>
       </div>`;
+  }
+
+  function selectVariant(cat, i, vIdx, el){
+    const key = cat+'|'+i;
+    selectedVariantIndex[key] = vIdx;
+    const p = PRODUCTS[cat][i];
+    const imgEl = document.getElementById('cardimg-'+cat+'-'+i);
+    if(imgEl && p.variants[vIdx]) imgEl.src = p.variants[vIdx].image;
+    const row = document.getElementById('variants-'+cat+'-'+i);
+    if(row){
+      row.querySelectorAll('.variant-dot').forEach(d => d.classList.remove('active'));
+      el.classList.add('active');
+    }
   }
 
   function productCardsHtml(cat){
@@ -992,9 +1020,13 @@
   function addToCart(cat, i, btn){
     const p = PRODUCTS[cat][i];
     const key = cat+'|'+i;
-    const cover = (p.images && p.images[0]) ? p.images[0] : null;
-    if(!cart[key]) cart[key] = {n:p.n, price:p.price, image:cover, qty:0};
-    cart[key].qty += 1;
+    const hasVariants = p.variants && p.variants.length > 0;
+    const vIdx = selectedVariantIndex[key] || 0;
+    const color = hasVariants ? p.variants[vIdx].color : null;
+    const cover = hasVariants ? p.variants[vIdx].image : ((p.images && p.images[0]) ? p.images[0] : null);
+    const cartKey = key + (color ? ('|'+color) : '');
+    if(!cart[cartKey]) cart[cartKey] = {n:p.n, price:p.price, image:cover, qty:0, color:color};
+    cart[cartKey].qty += 1;
     renderCart();
     const original = btn.textContent;
     btn.textContent = "Added ✓";
@@ -1032,7 +1064,7 @@
         <div class="drawer-item">
           ${item.image ? `<img src="${item.image}" alt="" class="drawer-item-img">` : '<div class="drawer-item-img drawer-item-noimg"></div>'}
           <div class="drawer-item-info">
-            <span class="name">${item.n}</span>
+            <span class="name">${item.n}${item.color ? ' — '+item.color : ''}</span>
             <div class="qty-price">
               <button class="qty-btn" onclick="changeQty('${key}',-1)">−</button>
               <span>${item.qty}</span>
@@ -1070,7 +1102,7 @@
       customerName: customer.name,
       phone: customer.phone,
       address: customer.address,
-      items: items.map(it => ({name:it.n, qty:it.qty, price:it.price, image:it.image||null})),
+      items: items.map(it => ({name:it.n, qty:it.qty, price:it.price, image:it.image||null, color:it.color||null})),
       subtotal, delivery, total: subtotal + delivery,
       createdAt: Date.now(),
       ...extra
@@ -1085,7 +1117,7 @@
     const subtotal = items.reduce((s,it)=> s + it.price*it.qty, 0);
     const total = subtotal + DELIVERY_FEE;
     let msg = `Hello MLuna Shop! I'd like to order:\n\n`;
-    items.forEach(it => { msg += `• ${it.n} x${it.qty} — GHC ${(it.price*it.qty).toFixed(2)}\n`; });
+    items.forEach(it => { msg += `• ${it.n}${it.color ? ' ('+it.color+')' : ''} x${it.qty} — GHC ${(it.price*it.qty).toFixed(2)}\n`; });
     msg += `\nSubtotal: GHC ${subtotal.toFixed(2)}\nDelivery (Accra): GHC ${DELIVERY_FEE.toFixed(2)}\nTotal: GHC ${total.toFixed(2)}\n\n`;
     msg += `Name: ${customer.name}\nPhone: ${customer.phone}\nDelivery Address: ${customer.address}\n\nPlease confirm availability and delivery.`;
     window.open('https://wa.me/233207657029?text=' + encodeURIComponent(msg), '_blank');
