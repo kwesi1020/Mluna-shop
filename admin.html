@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Store Admin — MLuna Shop</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Work+Sans:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#F6F1E6;
+    --forest:#20291B;
+    --sage:#66754F;
+    --gold:#C0923F;
+    --gold-soft:#E7CE9C;
+    --line: rgba(32,41,27,0.14);
+    --radius: 2px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--cream); color:var(--forest); font-family:'Work Sans', sans-serif; line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{ font-family:'Fraunces', serif; font-weight:500; letter-spacing:-0.01em; }
+  a{ color:inherit; }
+  .price{ font-family:'Space Mono', monospace; }
+
+  .moon{ width:14px; height:14px; border-radius:50%; background:var(--forest); position:relative; flex:none; }
+  .moon.p5{ background:var(--gold); }
+
+  .top-bar{ padding:16px 24px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px; }
+  .top-bar img{ height:34px; width:auto; }
+  .top-bar span{ font-size:0.78rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--sage); }
+
+  .hero{ background:var(--forest); color:var(--cream); padding:56px 24px 48px; }
+  .hero-inner{ max-width:820px; margin:0 auto; }
+  .back-link{ display:inline-flex; align-items:center; gap:6px; font-size:0.85rem; font-weight:600; color:var(--gold-soft); text-decoration:none; margin-bottom:14px; }
+  .eyebrow{ display:flex; align-items:center; gap:8px; font-size:0.72rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--gold-soft); margin-bottom:14px; }
+  .hero h1{ font-size:clamp(1.8rem,4vw,2.4rem); margin-bottom:14px; }
+  .hero p{ color:rgba(246,241,230,0.75); max-width:56ch; font-size:0.95rem; }
+
+  .body-wrap{ max-width:820px; margin:0 auto; padding:44px 24px 90px; }
+  .body-wrap h2{ font-size:1.3rem; margin-bottom:18px; }
+
+  label{ display:block; font-size:0.78rem; font-weight:600; margin-bottom:6px; color:var(--sage); text-transform:uppercase; letter-spacing:0.06em; }
+  input, textarea, select{
+    width:100%; border:1px solid var(--line); background:#fff; border-radius:var(--radius);
+    padding:12px 14px; font-family:'Work Sans'; font-size:0.92rem; color:var(--forest);
+  }
+  .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+  .form-grid .full{ grid-column:1 / -1; }
+  .submit-btn{ background:var(--gold); color:var(--forest); border:none; padding:15px 30px; border-radius:100px; font-weight:700; font-size:0.92rem; cursor:pointer; }
+  .btn-ghost{ border:1px solid var(--forest); color:var(--forest); background:transparent; padding:14px 24px; border-radius:100px; font-weight:600; font-size:0.85rem; text-decoration:none; cursor:pointer; }
+
+  #loginBox { max-width:360px; }
+  .field{ margin-bottom:16px; }
+  .forgot-link{ font-size:0.82rem; font-weight:600; color:var(--sage); cursor:pointer; text-decoration:underline; }
+  .setup-note{ font-size:0.82rem; color:rgba(32,41,27,0.55); margin-top:16px; max-width:56ch; }
+
+  #productForm{ margin-bottom:44px; border:1px solid var(--line); border-radius:var(--radius); padding:24px; background:#fff; }
+  #productForm h3{ margin-bottom:16px; font-size:1.1rem; }
+  .current-photo{ display:flex; flex-direction:column; gap:8px; margin-bottom:8px; }
+  .current-photo-thumbs{ display:flex; gap:8px; flex-wrap:wrap; }
+  .current-photo-thumbs img{ width:56px; height:56px; object-fit:cover; border-radius:var(--radius); border:1px solid var(--line); }
+  .current-photo span{ font-size:0.78rem; color:rgba(32,41,27,0.55); }
+
+  .photo-preview-list{ display:flex; flex-wrap:wrap; gap:12px; margin-top:10px; }
+  .photo-preview-item{ width:96px; }
+  .photo-preview-item img{ width:96px; height:96px; object-fit:cover; border-radius:var(--radius); border:1px solid var(--line); display:block; margin-bottom:6px; }
+  .photo-preview-item input{ padding:8px 10px; font-size:0.76rem; }
+
+  .optiongroup-row{ display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; align-items:center; }
+  .optiongroup-row input{ flex:1; min-width:140px; }
+  .optiongroup-row button{ border:1px solid #b3392f; color:#b3392f; background:transparent; padding:8px 14px; border-radius:100px; font-size:0.76rem; cursor:pointer; flex:none; }
+  .optiongroup-row button:hover{ background:#b3392f; color:#fff; }
+  .add-option-btn{ border:1px dashed var(--sage); color:var(--sage); background:transparent; padding:10px 16px; border-radius:100px; font-size:0.8rem; cursor:pointer; margin-top:4px; }
+  .add-option-btn:hover{ background:var(--sage); color:#fff; }
+
+  .combo-stock-row{ display:flex; justify-content:space-between; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); }
+  .combo-stock-row:last-child{ border-bottom:none; }
+  .combo-stock-label{ font-size:0.82rem; }
+  .combo-stock-row input{ width:80px; padding:8px 10px; font-size:0.82rem; }
+  .update-stock-btn{ border:1px solid var(--gold); color:var(--gold); background:transparent; padding:9px 16px; border-radius:100px; font-size:0.8rem; cursor:pointer; margin-top:8px; }
+  .update-stock-btn:hover{ background:var(--gold); color:var(--forest); }
+
+  .admin-cat-head{ font-size:1rem; margin:28px 0 10px; color:var(--sage); }
+  .admin-cat-head:first-child{ margin-top:0; }
+  .admin-row{ padding:14px 16px; border:1px solid var(--line); border-radius:var(--radius); background:#fff; margin-bottom:8px; font-size:0.88rem; }
+  .admin-row-top{ display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+  .admin-row-left{ display:flex; align-items:center; gap:12px; }
+  .admin-row-left img{ width:40px; height:40px; object-fit:cover; border-radius:var(--radius); border:1px solid var(--line); flex:none; }
+  .admin-row-actions{ display:flex; gap:8px; flex:none; align-items:center; }
+  .admin-row-actions button{ border:1px solid var(--line); background:transparent; padding:6px 14px; border-radius:100px; font-size:0.76rem; cursor:pointer; }
+  .admin-row-actions button:hover{ background:var(--forest); color:#fff; border-color:var(--forest); }
+  .admin-row-actions select{ width:auto; font-size:0.72rem; padding:6px 8px; }
+  .qty-adjust{ display:flex; align-items:center; gap:6px; }
+  .qty-adjust button{ width:26px; height:26px; border-radius:50%; border:1px solid var(--line); background:#fff; font-size:0.9rem; cursor:pointer; padding:0; }
+  .demo-tag{ font-size:0.68rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--gold); margin-left:8px; }
+  .demo-tag.oos{ color:#8c2f22; }
+  .combo-admin-list{ margin-top:10px; padding-top:10px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:6px; }
+  .combo-admin-row{ display:flex; justify-content:space-between; align-items:center; font-size:0.78rem; }
+
+  .orders-page{ display:none; }
+  .orders-page.open{ display:block; }
+  .orders-page-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+  .order-detail-card{ border:1px solid var(--line); border-radius:var(--radius); background:#fff; padding:18px; margin-bottom:12px; }
+  .order-detail-card .items-list{ font-size:0.82rem; color:rgba(32,41,27,0.7); margin:10px 0; line-height:1.6; }
+  .order-detail-actions{ display:flex; gap:8px; margin-top:10px; }
+  .order-detail-actions button{ border:1px solid var(--line); background:transparent; padding:7px 16px; border-radius:100px; font-size:0.78rem; cursor:pointer; }
+  .order-detail-actions button.danger{ border-color:#b3392f; color:#b3392f; }
+  .order-detail-actions button.danger:hover{ background:#b3392f; color:#fff; }
+
+  .status-badge{ font-size:0.68rem; text-transform:uppercase; letter-spacing:0.06em; font-weight:700; padding:4px 10px; border-radius:100px; display:inline-block; }
+  .status-pending{ background:#f0e3c0; color:#7a5c00; }
+  .status-confirmed{ background:#d7e6d0; color:#2e5c1f; }
+  .status-shipped{ background:#cfe0f0; color:#1f4a6e; }
+  .status-delivered{ background:var(--gold); color:var(--forest); }
+  .status-cancelled{ background:#f0d0cc; color:#8c2f22; }
+  .status-select{ font-size:0.76rem; padding:6px 10px; width:auto; margin-top:8px; }
+
+  @media (max-width: 640px){ .form-grid{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <img src="assets/logo.png" alt="MLuna Shop">
+  <span>Store Admin</span>
+</div>
+
+<div class="hero">
+  <div class="hero-inner">
+    <a class="back-link" href="index.html">← Back to Retail Shop</a>
+    <div class="eyebrow"><div class="moon p5"></div> Private — not linked from the main store nav</div>
+    <h1>Manage MLuna Shop</h1>
+    <p>Edit any of the 28 starter items to add a real photo and make it live, or add brand-new products — including custom categories, colour/size/yard/flavour options, and stock tracking. Changes appear on the store immediately.</p>
+  </div>
+</div>
+
+<div class="body-wrap">
+
+  <div id="loginBox">
+    <h2>Sign in</h2>
+    <form onsubmit="return adminLogin(event)">
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="adminEmail" required>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="adminPass" required>
+      </div>
+      <button type="submit" class="submit-btn">Sign In</button>
+    </form>
+    <p style="margin-top:14px;"><a class="forgot-link" onclick="adminForgotPassword()">Forgot password?</a></p>
+    <p class="setup-note">Not connected yet? See the setup guide for how Kodiya links this page to your Firebase account — once that's done, sign in here with the email and password he set up for you.</p>
+  </div>
+
+  <div id="adminPanel" style="display:none;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+      <h2 style="margin:0;">Products</h2>
+      <button onclick="adminLogout()" class="btn-ghost" style="padding:9px 18px; font-size:0.8rem;">Sign Out</button>
+    </div>
+
+    <form id="productForm" onsubmit="return submitProductForm(event)">
+      <h3>Add / Edit Product</h3>
+      <div class="form-grid">
+        <div>
+          <label>Category</label>
+          <select id="pfCategory" onchange="handleCategoryChange()">
+            <option value="skin">Skin & Facial Care</option>
+            <option value="hair">Hair & Beauty Accessories</option>
+            <option value="african">African Heritage</option>
+            <option value="bags">Bags & Purses</option>
+            <option value="gifts">Gift Sets</option>
+            <option value="home">Home & Lifestyle</option>
+            <optgroup label="Other Categories" id="customCatGroup"></optgroup>
+            <option value="__other__">+ Add New Category</option>
+          </select>
+          <div id="newCategoryBox" style="display:none; margin-top:10px;">
+            <label>New Category Name</label>
+            <input type="text" id="pfNewCategory" placeholder="e.g. Jewelry, Shoes, Perfumes">
+          </div>
+        </div>
+        <div>
+          <label>Product Name</label>
+          <input type="text" id="pfName" required>
+        </div>
+        <div class="full">
+          <label>Short Description</label>
+          <input type="text" id="pfNote">
+        </div>
+        <div>
+          <label>Price (GHC)</label>
+          <input type="number" step="0.01" id="pfPrice" required>
+        </div>
+        <div>
+          <label>Was-Price (GHC, optional)</label>
+          <input type="number" step="0.01" id="pfOld">
+        </div>
+        <div>
+          <label>Status</label>
+          <select id="pfStatus">
+            <option value="in_stock">In Stock</option>
+            <option value="out_of_stock">Out of Stock</option>
+            <option value="coming_soon">Coming Soon</option>
+          </select>
+        </div>
+        <div>
+          <label>Quantity (only used if this product has NO options below)</label>
+          <input type="number" min="0" step="1" id="pfQuantity" placeholder="Leave blank = always in stock">
+        </div>
+        <div class="full">
+          <label>Product Photos (you can select several at once)</label>
+          <div id="currentPhotoBox" class="current-photo" style="display:none;">
+            <div id="currentPhotoThumbs" class="current-photo-thumbs"></div>
+            <span>Current photos — selecting new files below replaces all of these with your new selection. Leave blank to keep the current photos.</span>
+          </div>
+          <input type="file" id="pfImage" accept="image/*" multiple onchange="previewSelectedPhotos()">
+          <div id="pfPhotoPreviews" class="photo-preview-list"></div>
+          <span style="font-size:0.78rem; color:rgba(32,41,27,0.55); display:block; margin-top:6px;">If this product comes in different colours WITH different photos, type the colour name under each photo (e.g. "Pink"). Leave blank for a plain photo with no colour-photo option.</span>
+        </div>
+        <div class="full">
+          <label>Product Options (optional — e.g. Colour, Size, Yards, Flavour)</label>
+          <div id="optionGroupsBox"></div>
+          <button type="button" class="add-option-btn" onclick="addOptionGroupRow()">+ Add Option</button>
+          <span style="font-size:0.78rem; color:rgba(32,41,27,0.55); display:block; margin-top:8px;">Example: Option name "Size", choices "S, M, L, XL". Add another row for "Colour". If this product uses a Colour option, use the same colour names you use for photos above so photos switch automatically.</span>
+        </div>
+        <div class="full" id="comboStockWrap" style="display:none;">
+          <label>Stock per Combination</label>
+          <div id="comboStockBox"></div>
+          <button type="button" class="update-stock-btn" onclick="generateComboStockTable()">Update Stock Table</button>
+          <span style="font-size:0.78rem; color:rgba(32,41,27,0.55); display:block; margin-top:8px;">Tap "Update Stock Table" after adding/editing options above to refresh this list. Any combination left at 0 shows as Out of Stock on the site for that specific colour/size — other combinations stay purchasable.</span>
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:6px;">
+        <button type="submit" id="pfSubmitBtn" class="submit-btn">Add Product</button>
+        <button type="button" onclick="resetProductForm()" class="btn-ghost">Clear</button>
+      </div>
+    </form>
+
+    <div id="adminProductList"></div>
+
+    <div style="margin-top:56px; padding-top:32px; border-top:1px solid var(--line);">
+      <h2 style="margin-bottom:6px;">Customers to Reach Out To</h2>
+      <p style="font-size:0.85rem; color:rgba(32,41,27,0.6); margin-bottom:18px;">Everyone who signed up for updates or sent a wholesale inquiry — message them directly when new arrivals land.</p>
+      <button onclick="copyAllLeadEmails()" class="btn-ghost" style="margin-bottom:18px; font-size:0.8rem; padding:9px 18px;">Copy All Emails</button>
+      <div id="leadsList"></div>
+    </div>
+
+    <div style="margin-top:56px; padding-top:32px; border-top:1px solid var(--line);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <h2 style="margin:0;">Recent Orders</h2>
+        <button onclick="showOrdersPage()" class="btn-ghost" style="padding:8px 16px; font-size:0.78rem;">View All Orders →</button>
+      </div>
+      <p style="font-size:0.85rem; color:rgba(32,41,27,0.6); margin-bottom:18px;">Every order placed through the site — via WhatsApp or Paystack — saved here even if the customer never sent the WhatsApp message.</p>
+      <div id="ordersList"></div>
+    </div>
+
+    <div style="margin-top:56px; padding-top:32px; border-top:1px solid var(--line);">
+      <h2 style="margin-bottom:6px;">Orders by Colour</h2>
+      <p style="font-size:0.85rem; color:rgba(32,41,27,0.6); margin-bottom:18px;">Which colour of each product customers are choosing (from photo variants or a Colour option), pulled from every order automatically.</p>
+      <div id="colourOrdersList"></div>
+    </div>
+
+    <div id="ordersPage" class="orders-page">
+      <div class="orders-page-head">
+        <h2 style="margin:0;">All Orders</h2>
+        <button onclick="hideOrdersPage()" class="btn-ghost" style="padding:8px 16px; font-size:0.78rem;">← Back</button>
+      </div>
+      <p style="font-size:0.85rem; color:rgba(32,41,27,0.6); margin-bottom:20px;">Every order in full — review the details, update its status, and delete once you're done with it.</p>
+      <div id="ordersPageList"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAwmoI-TqC5b1QbC5FZUD6qLgjR79aHpl8",
+    authDomain: "maluna-fab51.firebaseapp.com",
+    projectId: "maluna-fab51",
+    storageBucket: "maluna-fab51.firebasestorage.app",
+    messagingSenderId: "409531878868",
+    appId: "1:409531878868:web:f326890272edc737679a41"
+  };
+
+  const CLOUDINARY_CLOUD_NAME = 'gi28yswe';
+  const CLOUDINARY_UPLOAD_PRESET = 'Mluna shop';
+</script>
+<script>
+  const DEFAULT_PRODUCTS = {
+    skin: [
+      {n:"Skin Care Combo", note:"Vitamin C, Retinol, Salicylic & Collagen series", price:450, old:480},
+      {n:"Sadoer Fruit Facial Mask", note:"Green tea, hydrating", price:30, old:35},
+      {n:"Sadoer Combo Lip & Eye Mask", note:"3-in-1 series pack", price:23, old:25},
+      {n:"Sadoer Hand Cream (6pc)", note:"Moisten & nourish set", price:50, old:55},
+      {n:"Facial Cleanser Brush", note:"Double-sided silicone", price:65, old:70},
+      {n:"Facial Massage & Cleansing Brush", note:"Soft silicone, 2 colours", price:40, old:45},
+      {n:"7-in-1 Facial Cleansing Kit", note:"Multi-head cleansing set", price:95, old:100},
+      {n:"11-Piece Facial Application Set", note:"Headband, brushes & tools", price:70, old:75},
+      {n:"LED Vanity Mirror", note:"Touch-light desktop mirror", price:55, old:60},
+    ],
+    hair: [
+      {n:"Hair Clip Set", note:"Gradient pink claw clips", price:65, old:70},
+      {n:"Hair Tie Set", note:"20-piece colourful pack", price:50, old:55},
+      {n:"Hair Accessories Pack", note:"Black & blue only", price:60, old:65},
+      {n:"Styling Curl Keeper", note:"780ml, moisture lock", price:30, old:35},
+      {n:"8-Piece Mini Makeup Set", note:"Travel brush set", price:43, old:45},
+    ],
+    african: [
+      {n:"6 Yards Asante Kente", note:"Authentic weave — pricing from GHC 1,200", price:2800, old:3000},
+      {n:"Kente Cloth — 2 Yards", note:"High quality women's kente", price:350, old:450},
+      {n:"Quality Traditional Scarf", note:"Range GHC 50–130 depending on style", price:45, old:130},
+    ],
+    bags: [
+      {n:"Hand Bag", note:"Structured everyday bag", price:100, old:120},
+      {n:"Versatile Bag", note:"Designer-style tote", price:70, old:75},
+      {n:"Hand Purse", note:"Compact wristlet", price:70, old:75},
+      {n:"Bucket Bag Makeup Case", note:"Small & large sizes available", price:110, old:120},
+      {n:"Mini Suit Case", note:"Hardshell, multiple colours", price:135, old:150},
+    ],
+    gifts: [
+      {n:"Gift Set Perfume", note:"Lattafa set — choose any from the set", price:250, old:260},
+      {n:"Perfume Atomizer", note:"1 piece, travel size", price:12, old:13},
+      {n:"Fruit Scented Diffuser (Loris)", note:"Reed diffuser, citrus notes", price:85, old:90},
+      {n:"Gift Set — Fan & Flask", note:"Cup, hand fan & umbrella combo", price:200, old:250},
+    ],
+    home: [
+      {n:"Hand Fan", note:"4 fruit colourways", price:40, old:45},
+      {n:"3-Piece Towel Set", note:"Off-white, gift-boxed", price:110, old:120},
+      {n:"Egg Sliding Storage Container", note:"Holds ~30 eggs", price:30, old:35},
+    ],
+  };
+  const CATEGORY_LABELS = {skin:"Skin & Facial Care", hair:"Hair & Beauty Accessories", african:"African Heritage", bags:"Bags & Purses", gifts:"Gift Sets", home:"Home & Lifestyle"};
+  let customCategoryLabels = {};
+
+  function slugify(s){
+    return s.toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || 'category';
+  }
+
+  function buildComboKey(options){
+    if(!options) return '';
+    return Object.keys(options).sort().map(k => k+':'+options[k]).join('|');
+  }
+
+  function buildBaseProducts(){
+    const base = {};
+    for(const cat in DEFAULT_PRODUCTS){
+      base[cat] = DEFAULT_PRODUCTS[cat].map((p,i) => ({
+        ...p, images:[], variants:[], optionGroups:[], status:'in_stock', quantity:null, comboStock:{}, starterKey:cat+'-'+i, docId:null, isStarter:true
+      }));
+    }
+    return base;
+  }
+  let PRODUCTS = buildBaseProducts();
+
+  let db = null;
+  function initFirebase(){
+    if(!window.firebase || !firebaseConfig || firebaseConfig.apiKey.includes('YOUR_')) return;
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    firebase.auth().onAuthStateChanged(user => {
+      document.getElementById('loginBox').style.display = user ? 'none' : 'block';
+      document.getElementById('adminPanel').style.display = user ? 'block' : 'none';
+      if(user){ loadProductsFromFirestore(); loadLeadsFromFirestore(); loadOrdersFromFirestore(); }
+    });
+  }
+
+  function handleCategoryChange(){
+    const v = document.getElementById('pfCategory').value;
+    document.getElementById('newCategoryBox').style.display = (v === '__other__') ? 'block' : 'none';
+  }
+
+  function populateCategoryDropdown(){
+    const group = document.getElementById('customCatGroup');
+    if(!group) return;
+    const fixedCats = Object.keys(DEFAULT_PRODUCTS);
+    const customCats = Object.keys(PRODUCTS).filter(cat => !fixedCats.includes(cat));
+    group.innerHTML = customCats.map(cat => {
+      const label = customCategoryLabels[cat] || cat;
+      return `<option value="${cat}">${label}</option>`;
+    }).join('');
+  }
+
+  function loadProductsFromFirestore(){
+    if(!db) return;
+    db.collection('products').orderBy('sortOrder').get().then(snap => {
+      const base = buildBaseProducts();
+      const starterOverrides = {};
+      const newItems = {}; for(const cat in base) newItems[cat] = [];
+      const newLabels = {};
+
+      snap.forEach(doc => {
+        const d = doc.data();
+        const images = Array.isArray(d.images) ? d.images : (d.image ? [d.image] : []);
+        const variants = Array.isArray(d.variants) ? d.variants : [];
+        const optionGroups = Array.isArray(d.optionGroups) ? d.optionGroups : [];
+        const status = d.status || 'in_stock';
+        const quantity = (d.quantity !== undefined && d.quantity !== null) ? Number(d.quantity) : null;
+        const comboStock = (d.comboStock && typeof d.comboStock === 'object') ? d.comboStock : {};
+        const entry = {n:d.n, note:d.note||'', price:Number(d.price), old:Number(d.old||d.price), images, variants, optionGroups, status, quantity, comboStock, docId:doc.id, starterKey:d.starterKey||null};
+        if(d.starterKey){
+          starterOverrides[d.starterKey] = entry;
+        } else {
+          if(!newItems[d.category]) newItems[d.category] = [];
+          newItems[d.category].push({...entry, isStarter:false});
+          if(d.categoryLabel) newLabels[d.category] = d.categoryLabel;
+        }
+      });
+
+      for(const cat in base){
+        base[cat] = base[cat].map(item => {
+          const ov = starterOverrides[item.starterKey];
+          return ov ? {...item, ...ov, isStarter:false} : item;
+        }).concat(newItems[cat] || []);
+      }
+      for(const cat in newItems){
+        if(!base[cat]) base[cat] = newItems[cat];
+      }
+      PRODUCTS = base;
+      customCategoryLabels = newLabels;
+      populateCategoryDropdown();
+      renderAdminList();
+    }).catch(err => console.warn('Firestore load failed:', err));
+  }
+
+  // ===== Auth =====
+  function adminLogin(e){
+    e.preventDefault();
+    const email = document.getElementById('adminEmail').value;
+    const pass = document.getElementById('adminPass').value;
+    if(!db){ alert('Firebase isn\'t connected yet — see the setup guide.'); return false; }
+    firebase.auth().signInWithEmailAndPassword(email, pass)
+      .catch(err => alert('Login failed: ' + err.message));
+    return false;
+  }
+  function adminLogout(){ firebase.auth().signOut(); }
+  function adminForgotPassword(){
+    if(!db){ alert('Firebase isn\'t connected yet — see the setup guide.'); return; }
+    const email = document.getElementById('adminEmail').value;
+    if(!email){ alert('Type your email into the Email field above first, then tap "Forgot password?" again.'); return; }
+    firebase.auth().sendPasswordResetEmail(email)
+      .then(()=> alert('Reset link sent — check ' + email + ' (including spam) for an email from Firebase.'))
+      .catch(err => alert('Could not send reset email: ' + err.message));
+  }
+
+  // ===== Product Options builder =====
+  let optionGroupRowCount = 0;
+  function addOptionGroupRow(prefillName, prefillChoices){
+    const box = document.getElementById('optionGroupsBox');
+    const idx = optionGroupRowCount++;
+    const row = document.createElement('div');
+    row.className = 'optiongroup-row';
+    row.id = 'optrow-' + idx;
+    const safeName = prefillName ? prefillName.replace(/"/g,'&quot;') : '';
+    const safeChoices = prefillChoices ? prefillChoices.replace(/"/g,'&quot;') : '';
+    row.innerHTML = `
+      <input type="text" id="optName${idx}" placeholder="Option name (e.g. Size, Colour, Yards, Flavour)" value="${safeName}">
+      <input type="text" id="optChoices${idx}" placeholder="Choices, comma separated (e.g. S, M, L, XL)" value="${safeChoices}">
+      <button type="button" onclick="document.getElementById('optrow-${idx}').remove()">Remove</button>
+    `;
+    box.appendChild(row);
+  }
+  function collectOptionGroups(){
+    const box = document.getElementById('optionGroupsBox');
+    const rows = box.querySelectorAll('.optiongroup-row');
+    const groups = [];
+    rows.forEach(row => {
+      const nameInput = row.querySelector('input[id^="optName"]');
+      const choicesInput = row.querySelector('input[id^="optChoices"]');
+      const name = nameInput.value.trim();
+      const choices = choicesInput.value.split(',').map(c => c.trim()).filter(Boolean);
+      if(name && choices.length) groups.push({name, choices});
+    });
+    return groups;
+  }
+  function clearOptionGroupRows(){
+    document.getElementById('optionGroupsBox').innerHTML = '';
+    optionGroupRowCount = 0;
+  }
+
+  // ===== Stock per combination builder =====
+  let pendingComboStock = {};
+  function cartesianCombos(groups){
+    let combos = [{}];
+    groups.forEach(g => {
+      const next = [];
+      combos.forEach(c => { g.choices.forEach(choice => next.push({...c, [g.name]: choice})); });
+      combos = next;
+    });
+    return combos;
+  }
+  function generateComboStockTable(){
+    const groups = collectOptionGroups();
+    const wrap = document.getElementById('comboStockWrap');
+    const box = document.getElementById('comboStockBox');
+    if(!groups.length){
+      wrap.style.display = 'none';
+      box.innerHTML = '';
+      return;
+    }
+    wrap.style.display = 'block';
+    const combos = cartesianCombos(groups);
+    box.innerHTML = combos.map(combo => {
+      const key = buildComboKey(combo);
+      const label = Object.values(combo).join(' / ');
+      const val = pendingComboStock[key] !== undefined ? pendingComboStock[key] : 0;
+      const safeKey = key.replace(/'/g,"\\'");
+      return `
+      <div class="combo-stock-row">
+        <span class="combo-stock-label">${label}</span>
+        <input type="number" min="0" step="1" value="${val}" onchange="pendingComboStock['${safeKey}'] = Number(this.value)">
+      </div>`;
+    }).join('');
+  }
+
+  // ===== Product CRUD =====
+  let editingDocId = null;
+  let editingStarterKey = null;
+  let editingExistingImages = [];
+  let editingExistingVariants = [];
+  let pendingPhotoFiles = [];
+
+  function previewSelectedPhotos(){
+    const files = Array.from(document.getElementById('pfImage').files);
+    pendingPhotoFiles = files;
+    const box = document.getElementById('pfPhotoPreviews');
+    if(!files.length){ box.innerHTML = ''; return; }
+    box.innerHTML = files.map((f,i) => `
+      <div class="photo-preview-item">
+        <img src="${URL.createObjectURL(f)}" alt="">
+        <input type="text" id="variantColor${i}" placeholder="Colour (optional)">
+      </div>`).join('');
+  }
+
+  function resetProductForm(){
+    editingDocId = null;
+    editingStarterKey = null;
+    editingExistingImages = [];
+    editingExistingVariants = [];
+    pendingPhotoFiles = [];
+    pendingComboStock = {};
+    document.getElementById('pfCategory').value = 'skin';
+    document.getElementById('newCategoryBox').style.display = 'none';
+    document.getElementById('pfNewCategory').value = '';
+    document.getElementById('pfName').value = '';
+    document.getElementById('pfNote').value = '';
+    document.getElementById('pfPrice').value = '';
+    document.getElementById('pfOld').value = '';
+    document.getElementById('pfStatus').value = 'in_stock';
+    document.getElementById('pfQuantity').value = '';
+    document.getElementById('pfImage').value = '';
+    document.getElementById('pfPhotoPreviews').innerHTML = '';
+    document.getElementById('currentPhotoBox').style.display = 'none';
+    clearOptionGroupRows();
+    document.getElementById('comboStockWrap').style.display = 'none';
+    document.getElementById('comboStockBox').innerHTML = '';
+    document.getElementById('pfSubmitBtn').textContent = 'Add Product';
+  }
+
+  async function uploadPhotoToCloudinary(file){
+    if(CLOUDINARY_CLOUD_NAME.includes('YOUR_') || CLOUDINARY_UPLOAD_PRESET.includes('YOUR_')){
+      throw new Error('Cloudinary isn\'t connected yet — see Cloudinary-Setup-Guide.md');
+    }
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+      method: 'POST',
+      body: formData
+    });
+    if(!res.ok) throw new Error('Photo upload failed (' + res.status + ')');
+    const data = await res.json();
+    return data.secure_url;
+  }
+
+  async function submitProductForm(e){
+    e.preventDefault();
+    if(!db){ alert('Firebase isn\'t connected yet — see the setup guide.'); return false; }
+    const btn = document.getElementById('pfSubmitBtn');
+    const originalText = btn.textContent;
+
+    let category = document.getElementById('pfCategory').value;
+    let categoryLabel = null;
+    if(category === '__other__'){
+      const newCatName = document.getElementById('pfNewCategory').value.trim();
+      if(!newCatName){ alert('Please type a name for the new category.'); return false; }
+      category = slugify(newCatName);
+      categoryLabel = newCatName;
+    }
+
+    btn.disabled = true;
+
+    try{
+      const files = pendingPhotoFiles;
+      let images = editingExistingImages;
+      let variants = editingExistingVariants;
+      if(files.length){
+        images = [];
+        variants = [];
+        for(let i = 0; i < files.length; i++){
+          btn.textContent = `Uploading photo ${i+1} of ${files.length}...`;
+          const url = await uploadPhotoToCloudinary(files[i]);
+          images.push(url);
+          const colorInput = document.getElementById('variantColor'+i);
+          const colorName = colorInput ? colorInput.value.trim() : '';
+          if(colorName) variants.push({color: colorName, image: url});
+        }
+      }
+
+      const optionGroups = collectOptionGroups();
+      let comboStock = {};
+      if(optionGroups.length){
+        const combos = cartesianCombos(optionGroups);
+        combos.forEach(c => {
+          const key = buildComboKey(c);
+          comboStock[key] = pendingComboStock[key] !== undefined ? pendingComboStock[key] : 0;
+        });
+      }
+
+      const qtyRaw = document.getElementById('pfQuantity').value;
+      const quantity = qtyRaw === '' ? null : Math.max(0, Number(qtyRaw));
+
+      btn.textContent = 'Saving...';
+      const data = {
+        category: category,
+        n: document.getElementById('pfName').value,
+        note: document.getElementById('pfNote').value,
+        price: Number(document.getElementById('pfPrice').value),
+        old: Number(document.getElementById('pfOld').value) || Number(document.getElementById('pfPrice').value),
+        images: images,
+        variants: variants,
+        optionGroups: optionGroups,
+        status: document.getElementById('pfStatus').value,
+        quantity: quantity,
+        comboStock: comboStock,
+        sortOrder: Date.now(),
+      };
+      if(editingStarterKey) data.starterKey = editingStarterKey;
+      if(categoryLabel) data.categoryLabel = categoryLabel;
+
+      if(editingDocId){
+        await db.collection('products').doc(editingDocId).update(data);
+      } else {
+        await db.collection('products').add(data);
+      }
+      resetProductForm();
+      loadProductsFromFirestore();
+    }catch(err){
+      alert('Save failed: ' + err.message);
+    }finally{
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+    return false;
+  }
+
+  function editProduct(cat, i){
+    const p = PRODUCTS[cat][i];
+    editingDocId = p.docId || null;
+    editingStarterKey = p.starterKey || null;
+    editingExistingImages = p.images || [];
+    editingExistingVariants = p.variants || [];
+    pendingPhotoFiles = [];
+    pendingComboStock = {...(p.comboStock || {})};
+    document.getElementById('pfPhotoPreviews').innerHTML = '';
+    document.getElementById('pfName').value = p.n;
+    document.getElementById('pfNote').value = p.note;
+    document.getElementById('pfPrice').value = p.price;
+    document.getElementById('pfOld').value = p.old;
+    document.getElementById('pfStatus').value = p.status || 'in_stock';
+    document.getElementById('pfQuantity').value = (p.quantity !== null && p.quantity !== undefined) ? p.quantity : '';
+    document.getElementById('pfImage').value = '';
+
+    const categorySelect = document.getElementById('pfCategory');
+    categorySelect.value = cat;
+    if(categorySelect.value !== cat){
+      categorySelect.value = '__other__';
+      document.getElementById('newCategoryBox').style.display = 'block';
+      document.getElementById('pfNewCategory').value = customCategoryLabels[cat] || cat;
+    } else {
+      document.getElementById('newCategoryBox').style.display = 'none';
+    }
+
+    const photoBox = document.getElementById('currentPhotoBox');
+    const thumbs = document.getElementById('currentPhotoThumbs');
+    if(p.images && p.images.length){
+      thumbs.innerHTML = p.images.map(url => `<img src="${url}" alt="">`).join('');
+      photoBox.style.display = 'flex';
+    } else {
+      thumbs.innerHTML = '';
+      photoBox.style.display = 'none';
+    }
+
+    clearOptionGroupRows();
+    (p.optionGroups || []).forEach(g => addOptionGroupRow(g.name, (g.choices||[]).join(', ')));
+    generateComboStockTable();
+
+    document.getElementById('pfSubmitBtn').textContent = 'Save Changes';
+    document.getElementById('productForm').scrollIntoView({behavior:'smooth'});
+  }
+
+  function deleteProduct(cat, i){
+    const p = PRODUCTS[cat][i];
+    if(!p.docId){ alert('This is still an original starter item — edit and save it first before you can delete or revert it.'); return; }
+    const msg = p.starterKey ? 'Revert this item back to its starter default (removes your photo/edits)?' : 'Remove this item from the store completely?';
+    if(!confirm(msg)) return;
+    db.collection('products').doc(p.docId).delete().then(loadProductsFromFirestore);
+  }
+
+  function adjustQuantity(cat, i, delta){
+    const p = PRODUCTS[cat][i];
+    if(!p.docId){ alert('Edit and save this product first before adjusting quantity.'); return; }
+    const current = (p.quantity !== null && p.quantity !== undefined) ? p.quantity : 0;
+    const next = Math.max(0, current + delta);
+    db.collection('products').doc(p.docId).update({quantity: next}).then(loadProductsFromFirestore);
+  }
+
+  function adjustComboQty(cat, i, comboKey, delta){
+    const p = PRODUCTS[cat][i];
+    if(!p.docId){ alert('Edit and save this product first before adjusting stock.'); return; }
+    const current = (p.comboStock && p.comboStock[comboKey] !== undefined) ? p.comboStock[comboKey] : 0;
+    const next = Math.max(0, current + delta);
+    db.collection('products').doc(p.docId).update({['comboStock.'+comboKey]: next}).then(loadProductsFromFirestore);
+  }
+
+  function updateProductStatus(cat, i, newStatus){
+    const p = PRODUCTS[cat][i];
+    if(!p.docId){ alert('Edit and save this product first before changing status.'); return; }
+    db.collection('products').doc(p.docId).update({status: newStatus}).then(loadProductsFromFirestore);
+  }
+
+  // ===== Customer leads (newsletter + wholesale signups) =====
+  let LEADS = [];
+  function loadLeadsFromFirestore(){
+    if(!db) return;
+    db.collection('leads').orderBy('createdAt', 'desc').limit(200)
+      .onSnapshot(snap => {
+        LEADS = snap.docs.map(d => d.data());
+        renderLeadsList();
+      }, err => {
+        console.warn('Leads load failed:', err);
+        const el = document.getElementById('leadsList');
+        if(el) el.innerHTML = '<p style="font-size:0.85rem; color:rgba(32,41,27,0.5);">Could not load signups: ' + err.message + '</p>';
+      });
+  }
+  function renderLeadsList(){
+    const el = document.getElementById('leadsList');
+    if(!el) return;
+    if(LEADS.length === 0){ el.innerHTML = '<p style="font-size:0.85rem; color:rgba(32,41,27,0.5);">No signups yet.</p>'; return; }
+    el.innerHTML = LEADS.map(l => `
+      <div class="admin-row">
+        <div>
+          <strong>${l.name || l.email || 'Unknown'}</strong>
+          ${l.email ? `<span class="price">${l.email}</span>` : ''}
+          ${l.phone ? ` · ${l.phone}` : ''}
+          <span class="demo-tag">${l.source === 'wholesale' ? 'wholesale' : 'newsletter'}</span>
+        </div>
+      </div>`).join('');
+  }
+  function copyAllLeadEmails(){
+    const emails = [...new Set(LEADS.map(l => l.email).filter(Boolean))];
+    if(emails.length === 0){ alert('No emails saved yet.'); return; }
+    const text = emails.join(', ');
+    if(navigator.clipboard){
+      navigator.clipboard.writeText(text).then(()=> alert(emails.length + ' email(s) copied — paste into WhatsApp, email, or wherever you send updates.'));
+    } else {
+      prompt('Copy these emails:', text);
+    }
+  }
+
+  // ===== Orders =====
+  let ORDERS = [];
+  function formatItemOptions(it){
+    const parts = [];
+    if(it.color) parts.push(it.color);
+    if(it.options){
+      Object.keys(it.options).forEach(k => { if(it.options[k]) parts.push(it.options[k]); });
+    }
+    return parts.length ? ' (' + parts.join(', ') + ')' : '';
+  }
+  function loadOrdersFromFirestore(){
+    if(!db) return;
+    db.collection('orders').orderBy('createdAt', 'desc').limit(100)
+      .onSnapshot(snap => {
+        ORDERS = snap.docs.map(d => ({...d.data(), docId:d.id}));
+        renderOrdersList();
+      }, err => {
+        console.warn('Orders load failed:', err);
+        const el = document.getElementById('ordersList');
+        if(el) el.innerHTML = '<p style="font-size:0.85rem; color:rgba(32,41,27,0.5);">Could not load orders: ' + err.message + '</p>';
+      });
+  }
+  function renderOrdersList(){
+    const el = document.getElementById('ordersList');
+    if(!el) return;
+    if(ORDERS.length === 0){ el.innerHTML = '<p style="font-size:0.85rem; color:rgba(32,41,27,0.5);">No orders yet.</p>'; return; }
+    el.innerHTML = ORDERS.map(o => {
+      const itemsText = (o.items||[]).map(it => `${it.name}${formatItemOptions(it)} x${it.qty}`).join(', ');
+      const date = o.createdAt ? new Date(o.createdAt).toLocaleDateString() : '';
+      const status = o.status || 'pending';
+      return `
+      <div class="admin-row" style="align-items:flex-start;">
+        <div>
+          <strong>${o.customerName || 'Unknown'}</strong> <span class="price">GHC ${(o.total||0).toFixed(2)}</span>
+          <span class="demo-tag">${o.channel === 'paystack' ? 'paid via Paystack' : 'via WhatsApp'}</span>
+          <span class="status-badge status-${status}">${status}</span><br>
+          <span style="font-size:0.78rem; color:rgba(32,41,27,0.6);">${o.phone || ''} · ${o.address || ''}</span><br>
+          <span style="font-size:0.78rem; color:rgba(32,41,27,0.5);">${itemsText} — ${date}</span>
+        </div>
+      </div>`;
+    }).join('');
+    renderColourOrdersList();
+    if(document.getElementById('ordersPage').classList.contains('open')) renderOrdersPageList();
+  }
+
+  function showOrdersPage(){
+    document.getElementById('ordersPage').classList.add('open');
+    renderOrdersPageList();
+    document.getElementById('ordersPage').scrollIntoView({behavior:'smooth'});
+  }
+  function hideOrdersPage(){
+    document.getElementById('ordersPage').classList.remove('open');
+  }
+  function renderOrdersPageList(){
+    const el = document.getElementById('ordersPageList');
+    if(!el) return;
+    if(ORDERS.length === 0){ el.innerHTML = '<p style="font-size:0.85rem; color:rgba(32,41,27,0.5);">No orders yet.</p>'; return; }
+    el.innerHTML = ORDERS.map(o => {
+      const date = o.createdAt ? new Date(o.createdAt).toLocaleString() : '';
+      const itemsHtml = (o.items||[]).map(it => `${it.name}${formatItemOptions(it)} × ${it.qty} — GHC ${((it.price||0)*(it.qty||1)).toFixed(2)}`).join('<br>');
+      const status = o.status || 'pending';
+      return `
+      <div class="order-detail-card">
+        <strong>${o.customerName || 'Unknown'}</strong> <span class="price">GHC ${(o.total||0).toFixed(2)}</span>
+        <span class="demo-tag">${o.channel === 'paystack' ? 'paid via Paystack' : 'via WhatsApp'}</span>
+        <span class="status-badge status-${status}">${status}</span>
+        <div style="font-size:0.82rem; color:rgba(32,41,27,0.65); margin-top:6px;">${o.phone || ''} · ${o.address || ''}</div>
+        <div class="items-list">${itemsHtml}</div>
+        <div style="font-size:0.76rem; color:rgba(32,41,27,0.45);">${date}</div>
+        <select class="status-select" onchange="updateOrderStatus('${o.docId}', this.value)">
+          <option value="pending" ${status==='pending'?'selected':''}>Pending</option>
+          <option value="confirmed" ${status==='confirmed'?'selected':''}>Confirmed</option>
+          <option value="shipped" ${status==='shipped'?'selected':''}>Shipped</option>
+          <option value="delivered" ${status==='delivered'?'selected':''}>Delivered</option>
+          <option value="cancelled" ${status==='cancelled'?'selected':''}>Cancelled</option>
+        </select>
+        <div class="order-detail-actions">
+          <button class="danger" onclick="deleteOrder('${o.docId}')">Delete Order</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  function deleteOrder(docId){
+    if(!confirm('Delete this order permanently? This cannot be undone.')) return;
+    db.collection('orders').doc(docId).delete();
+  }
+  function updateOrderStatus(docId, newStatus){
+    db.collection('orders').doc(docId).update({status: newStatus})
+      .catch(err => alert('Could not update status: ' + err.message));
+  }
+
+  function renderColourOrdersList(){
+    const el = document.getElementById('colourOrdersList');
+    if(!el) return;
+    const rows = [];
+    ORDERS.forEach(o => {
+      const date = o.createdAt ? new Date(o.createdAt).toLocaleDateString() : '';
+      (o.items||[]).forEach(it => {
+        const colorVal = it.color || (it.options && (it.options.Colour || it.options.colour || it.options.Color));
+        if(colorVal){
+          rows.push({customer:o.customerName||'Unknown', phone:o.phone||'', name:it.name, color:colorVal, qty:it.qty, image:it.image||null, date:date});
+        }
+      });
+    });
+    if(rows.length === 0){ el.innerHTML = '<p style="font-size:0.85rem; color:rgba(32,41,27,0.5);">No colour-specific orders yet.</p>'; return; }
+    el.innerHTML = rows.map(r => `
+      <div class="admin-row">
+        <div class="admin-row-left">
+          ${r.image ? `<img src="${r.image}" alt="">` : ''}
+          <div>
+            <strong>${r.name}</strong> <span class="demo-tag">${r.color}</span><br>
+            <span style="font-size:0.78rem; color:rgba(32,41,27,0.6);">${r.customer} · ${r.phone} · qty ${r.qty} · ${r.date}</span>
+          </div>
+        </div>
+      </div>`).join('');
+  }
+
+  function renderAdminList(){
+    const el = document.getElementById('adminProductList');
+    if(!el) return;
+    let html = '';
+    for(const cat in PRODUCTS){
+      const label = CATEGORY_LABELS[cat] || customCategoryLabels[cat] || cat;
+      html += `<h3 class="admin-cat-head">${label}</h3>`;
+      PRODUCTS[cat].forEach((p,i) => {
+        const cover = (p.images && p.images[0]) ? p.images[0] : null;
+        const hasOptions = p.optionGroups && p.optionGroups.length;
+        const statusTag = p.status === 'out_of_stock' ? '<span class="demo-tag oos">Out of Stock</span>'
+          : p.status === 'coming_soon' ? '<span class="demo-tag">Coming Soon</span>' : '';
+        const qtyTag = (!hasOptions && p.quantity !== null && p.quantity !== undefined) ? `<span class="demo-tag">Qty: ${p.quantity}</span>` : '';
+
+        let comboListHtml = '';
+        if(hasOptions){
+          const comboKeys = Object.keys(p.comboStock || {});
+          if(comboKeys.length){
+            comboListHtml = `<div class="combo-admin-list">` + comboKeys.map(k => {
+              const label2 = k.split('|').map(part => part.split(':')[1]).join(' / ');
+              const qty = p.comboStock[k];
+              const disabledAttr = p.docId ? '' : 'disabled';
+              return `
+              <div class="combo-admin-row">
+                <span>${label2}${qty<=0 ? ' — <strong style="color:#8c2f22;">Out of Stock</strong>' : ' — Qty: '+qty}</span>
+                <span class="qty-adjust">
+                  <button ${disabledAttr} onclick="adjustComboQty('${cat}',${i},'${k.replace(/'/g,"\\'")}',-1)">−</button>
+                  <button ${disabledAttr} onclick="adjustComboQty('${cat}',${i},'${k.replace(/'/g,"\\'")}',1)">+</button>
+                </span>
+              </div>`;
+            }).join('') + `</div>`;
+          }
+        }
+
+        html += `
+        <div class="admin-row">
+          <div class="admin-row-top">
+            <div class="admin-row-left">
+              ${cover ? `<img src="${cover}" alt="">` : ''}
+              <div>
+                <strong>${p.n}</strong> <span class="price">GHC ${p.price.toFixed(2)}</span>
+                ${p.images && p.images.length > 1 ? `<span class="demo-tag">${p.images.length} photos</span>` : ''}
+                ${p.variants && p.variants.length ? `<span class="demo-tag">${p.variants.length} colours</span>` : ''}
+                ${hasOptions ? `<span class="demo-tag">${p.optionGroups.length} option groups</span>` : ''}
+                ${statusTag}${qtyTag}
+                ${p.isStarter ? '<span class="demo-tag">starter item</span>' : ''}
+              </div>
+            </div>
+            <div class="admin-row-actions">
+              ${p.docId ? `<select onchange="updateProductStatus('${cat}',${i}, this.value)">
+                <option value="in_stock" ${(!p.status||p.status==='in_stock')?'selected':''}>In Stock</option>
+                <option value="out_of_stock" ${p.status==='out_of_stock'?'selected':''}>Out of Stock</option>
+                <option value="coming_soon" ${p.status==='coming_soon'?'selected':''}>Coming Soon</option>
+              </select>` : ''}
+              ${(!hasOptions && p.docId) ? `<span class="qty-adjust"><button onclick="adjustQuantity('${cat}',${i},-1)">−</button><button onclick="adjustQuantity('${cat}',${i},1)">+</button></span>` : ''}
+              <button onclick="editProduct('${cat}',${i})">Edit</button>
+              <button onclick="deleteProduct('${cat}',${i})">Delete</button>
+            </div>
+          </div>
+          ${comboListHtml}
+        </div>`;
+      });
+    }
+    el.innerHTML = html;
+  }
+
+  initFirebase();
+</script>
+
+</body>
+</html>
