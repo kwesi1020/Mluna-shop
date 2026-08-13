@@ -1224,6 +1224,18 @@
   }
   function printInvoice(){ window.print(); }
 
+  function locateProductByName(name){
+    for(const cat in PRODUCTS){
+      const idx = PRODUCTS[cat].findIndex(p => p.n === name);
+      if(idx > -1) return {cat, i: idx};
+    }
+    return null;
+  }
+  function jumpToProduct(name){
+    const loc = locateProductByName(name);
+    if(!loc){ alert('Could not find this product to edit.'); return; }
+    editProduct(loc.cat, loc.i);
+  }
   // ===== Analytics =====
   let analyticsRange = 'month';
   function setAnalyticsRange(range){
