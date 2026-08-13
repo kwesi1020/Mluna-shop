@@ -1338,8 +1338,8 @@
   }
 
   function saveOrderToFirestore(customer, items, subtotal, delivery, extra){
-    if(!db) return;
-    db.collection('orders').add({
+    if(!db) return Promise.resolve(null);
+    return db.collection('orders').add({
       customerName: customer.name,
       phone: customer.phone,
       address: customer.address,
@@ -1347,10 +1347,10 @@
       subtotal, delivery, total: subtotal + delivery,
       createdAt: Date.now(),
       status: 'pending',
-      paymentStatus: (extra && extra.channel === 'paystack') ? 'paid' : 'unpaid',
-      paymentMethod: (extra && extra.channel === 'paystack') ? 'Paystack' : null,
+      paymentStatus: 'unpaid',
+      paymentMethod: null,
       ...extra
-    }).catch(err => console.warn('Order save failed (non-blocking):', err));
+    }).then(ref => ref.id).catch(err => { console.warn('Order save failed (non-blocking):', err); return null; });
   }
 
   function sendWhatsApp(){
@@ -1385,19 +1385,38 @@
     if(!email) return;
     fbq('track', 'InitiateCheckout', {value:total, currency:'GHS', num_items:items.length});
     gtag('event', 'begin_checkout', {currency:'GHS', value:total});
-    PaystackPop.setup({
-      key: 'pk_live_9136ecd40ccc704b3e337e4168138f97186bff96',
-      email: email,
-      amount: Math.round(total * 100),
-      currency: 'GHS',
-      callback: function(response){
-        fbq('track', 'Purchase', {value:total, currency:'GHS'});
-        gtag('event', 'purchase', {transaction_id:response.reference, currency:'GHS', value:total});
-        saveOrderToFirestore(customer, items, subtotal, DELIVERY_FEE, {channel:'paystack', email, paystackRef:response.reference});
-        alert('Payment successful! Reference: ' + response.reference + '\nPlease also send your order on WhatsApp to confirm delivery.');
-      },
-      onClose: function(){}
-    }).openIframe();
+
+    saveOrderToFirestore(customer, items, subtotal, DELIVERY_FEE, {channel:'paystack', email}).then(orderId => {
+      if(!orderId){ alert('Could not start order. Please try again or use WhatsApp.'); return; }
+
+      PaystackPop.setup({
+        key: 'pk_live_9136ecd40ccc704b3e337e4168138f97186bff96',
+        email: email,
+        amount: Math.round(total * 100),
+        currency: 'GHS',
+        callback: function(response){
+          fetch('/api/verify-payment', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ reference: response.reference, orderId: orderId })
+          })
+          .then(r => r.json())
+          .then(result => {
+            if(result.verified){
+              fbq('track', 'Purchase', {value:total, currency:'GHS'});
+              gtag('event', 'purchase', {transaction_id:response.reference, currency:'GHS', value:total});
+              alert('Payment confirmed! Reference: ' + response.reference + '\nYour order is now confirmed.');
+            } else {
+              alert('We could not confirm your payment yet. If money left your account, please contact us on WhatsApp with reference ' + response.reference + ' and we will check manually.');
+            }
+          })
+          .catch(()=> alert('Payment was made but we could not confirm it automatically. Please contact us on WhatsApp with reference ' + response.reference + '.'));
+        },
+        onClose: function(){
+          alert('Payment was cancelled. Your order was saved as unpaid — you can retry payment or send it via WhatsApp instead.');
+        }
+      }).openIframe();
+    });
   }
 
   function openLogoLightbox(){ document.getElementById('logoLightbox').classList.add('open'); }
