@@ -1291,24 +1291,24 @@
     for(const cat in PRODUCTS){
       PRODUCTS[cat].forEach(p => {
         if(p.archived) return;
-        if(p.status === 'coming_soon') comingSoonItems.push(p.n);
-        if(p.status === 'out_of_stock') outOfStockItems.push(p.n);
+        if(p.status === 'coming_soon') comingSoonItems.push({text:p.n, name:p.n});
+        if(p.status === 'out_of_stock') outOfStockItems.push({text:p.n, name:p.n});
         if(p.optionGroups && p.optionGroups.length){
           Object.entries(p.comboStock||{}).forEach(([k,qty]) => {
             const label = k.split('|').map(part => part.split(':')[1]).join(' / ');
-            if(qty === 0) outOfStockItems.push(p.n + ' (' + label + ')');
-            else if(qty <= 5) lowStockItems.push(p.n + ' (' + label + ') — ' + qty + ' left');
+            if(qty === 0) outOfStockItems.push({text:p.n + ' (' + label + ')', name:p.n});
+            else if(qty <= 5) lowStockItems.push({text:p.n + ' (' + label + ') — ' + qty + ' left', name:p.n});
           });
         } else if(p.quantity !== null && p.quantity !== undefined){
-          if(p.quantity === 0 && p.status !== 'out_of_stock') outOfStockItems.push(p.n);
-          else if(p.quantity > 0 && p.quantity <= 5) lowStockItems.push(p.n + ' — ' + p.quantity + ' left');
+          if(p.quantity === 0 && p.status !== 'out_of_stock') outOfStockItems.push({text:p.n, name:p.n});
+          else if(p.quantity > 0 && p.quantity <= 5) lowStockItems.push({text:p.n + ' — ' + p.quantity + ' left', name:p.n});
         }
       });
     }
-    document.getElementById('analyticsLowStock').innerHTML = lowStockItems.length ? lowStockItems.map(t => `<div class="analytics-list-item">${t.replace(/</g,'&lt;')}</div>`).join('') : '<p class="analytics-empty">Nothing low on stock right now.</p>';
-    document.getElementById('analyticsOutOfStock').innerHTML = outOfStockItems.length ? outOfStockItems.map(t => `<div class="analytics-list-item">${t.replace(/</g,'&lt;')}</div>`).join('') : '<p class="analytics-empty">Nothing out of stock right now.</p>';
-    document.getElementById('analyticsComingSoon').innerHTML = comingSoonItems.length ? comingSoonItems.map(t => `<div class="analytics-list-item">${t.replace(/</g,'&lt;')}</div>`).join('') : '<p class="analytics-empty">No Coming Soon products right now.</p>';
-  }
+    const renderClickList = (arr, emptyMsg) => arr.length ? arr.map(o => `<div class="analytics-list-item" style="cursor:pointer;" onclick="jumpToProduct('${o.name.replace(/'/g,"\\'")}')">${o.text.replace(/</g,'&lt;')}</div>`).join('') : `<p class="analytics-empty">${emptyMsg}</p>`;
+    document.getElementById('analyticsLowStock').innerHTML = renderClickList(lowStockItems, 'Nothing low on stock right now.');
+    document.getElementById('analyticsOutOfStock').innerHTML = renderClickList(outOfStockItems, 'Nothing out of stock right now.');
+    document.getElementById('analyticsComingSoon').innerHTML = renderClickList(comingSoonItems, 'No Coming Soon products right now.');
 
   initFirebase();
 </script>
