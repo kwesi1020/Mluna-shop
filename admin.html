@@ -1003,6 +1003,20 @@
     db.collection('orders').doc(docId).update({status: newStatus})
       .catch(err => alert('Could not update status: ' + err.message));
   }
+  const STATUS_MESSAGES = {
+    confirmed: 'confirmed and being prepared',
+    shipped: 'on its way to you',
+    delivered: 'marked as delivered — thank you for shopping with MLuna Shop!',
+    cancelled: 'cancelled. Please reach out if you have any questions'
+  };
+  function notifyCustomer(docId){
+    const o = ORDERS.find(x => x.docId === docId);
+    if(!o) return;
+    const status = o.status || 'pending';
+    const line = STATUS_MESSAGES[status] || ('updated to: ' + status);
+    const msg = `Hi ${o.customerName || ''}, this is MLuna Shop. Your order (Total: GHC ${(o.total||0).toFixed(2)}) is now ${line}.`;
+    window.open('https://wa.me/' + (o.phone||'').replace(/\D/g,'') + '?text=' + encodeURIComponent(msg), '_blank');
+  }
 
   function renderColourOrdersList(){
     const el = document.getElementById('colourOrdersList');
@@ -1128,11 +1142,10 @@
           <span class="status-badge status-${status}">${status}</span>
           ${r.featured ? '<span class="demo-tag">featured</span>' : ''}
         </div>
-        <div class="order-detail-actions" style="margin-top:10px;">
-          ${status !== 'approved' ? `<button onclick="setReviewStatus('${r.docId}','approved')">Approve</button>` : ''}
-          ${status !== 'rejected' ? `<button onclick="setReviewStatus('${r.docId}','rejected')">Reject</button>` : ''}
-          <button onclick="toggleFeatureReview('${r.docId}', ${!!r.featured})">${r.featured ? 'Unfeature' : 'Feature'}</button>
-          <button class="danger" onclick="deleteReviewAdmin('${r.docId}')">Delete</button>
+       <div class="order-detail-actions">
+          <button onclick="notifyCustomer('${o.docId}')">Notify Customer</button>
+          <button onclick="openInvoice('${o.docId}')">Print Invoice</button>
+          <button class="danger" onclick="deleteOrder('${o.docId}')">Delete Order</button>
         </div>
       </div>`;
     }).join('');
