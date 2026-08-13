@@ -1,0 +1,1675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MLuna Shop — Traditional Wear & Premium Accessories in Accra, Ghana</title>
+
+<script>
+  const GA4_MEASUREMENT_ID = 'G-5RCXZPPP8C';
+  const META_PIXEL_ID = '3564947163681998';
+  const TRACKING_ENABLED = true;
+</script>
+
+<script>
+  if (TRACKING_ENABLED) {
+    var gaScript = document.createElement('script');
+    gaScript.async = true;
+    gaScript.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA4_MEASUREMENT_ID;
+    document.head.appendChild(gaScript);
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){ dataLayer.push(arguments); }
+    window.gtag = gtag;
+    gtag('js', new Date());
+    gtag('config', GA4_MEASUREMENT_ID);
+  } else {
+    window.gtag = function(){};
+  }
+</script>
+
+<script>
+  if (TRACKING_ENABLED) {
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+    document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', META_PIXEL_ID);
+    fbq('track', 'PageView');
+  } else {
+    window.fbq = function(){};
+  }
+</script>
+
+<meta name="description" content="MLuna Shop: premium African heritage fashion and beauty in Accra & Tema, Ghana. Shop authentic Asante Kente, traditional wear, skincare, bags and gift sets. Nationwide delivery — order on WhatsApp.">
+<meta name="keywords" content="traditional wear Accra, Kente cloth Ghana, fashion shop Ghana, African accessories Tema, skincare shop Accra, Asante Kente for sale, gift shop Ghana, nationwide delivery Ghana">
+<link rel="canonical" href="https://mluna-shop.vercel.app/">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MLuna Shop">
+<meta property="og:title" content="MLuna Shop — Where Heritage Meets Luxury">
+<meta property="og:description" content="Premium African heritage fashion, Kente, skincare & gifts. Nationwide delivery across Ghana — order on WhatsApp.">
+<meta property="og:url" content="https://mluna-shop.vercel.app/">
+<meta property="og:locale" content="en_GH">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Store",
+  "name": "MLuna Shop",
+  "image": "assets/logo.png",
+  "description": "Premium African heritage fashion, Kente textiles, traditional wear, skincare and gift sets. Nationwide delivery across Ghana.",
+  "telephone": "+233207657029",
+  "email": "mawuenaagbogah0@gmail.com",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "Makavo Junction, Accra-Lome Rd",
+    "addressLocality": "Accra",
+    "addressCountry": "GH"
+  },
+  "openingHours": "Mo-Sa",
+  "priceRange": "GHS",
+  "areaServed": "Ghana"
+}
+</script>
+
+<link rel="icon" href="assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Work+Sans:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#EFE7DC;
+    --forest:#171412;
+    --sage:#8C7B6B;
+    --gold:#A78A6B;
+    --gold-soft:#DCC9B0;
+    --line: rgba(23,20,18,0.14);
+    --radius: 2px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth; overflow-x:hidden;}
+  body{
+    background:var(--cream);
+    color:var(--forest);
+    font-family:'Work Sans', sans-serif;
+    line-height:1.5;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{ font-family:'Fraunces', serif; font-weight:500; letter-spacing:-0.01em; }
+  a{color:inherit;}
+  .price{ font-family:'Space Mono', monospace; }
+  .page{ display:none; }
+  .page.active{ display:block; }
+
+  .moon{ width:14px; height:14px; border-radius:50%; background:var(--forest); position:relative; flex:none; }
+  .moon::after{ content:''; position:absolute; inset:0; border-radius:50%; background:var(--cream); }
+  .moon.p0::after{ left:100%; }
+  .moon.p1::after{ left:60%; }
+  .moon.p2::after{ left:20%; }
+  .moon.p3::after{ left:-20%; }
+  .moon.p4::after{ left:-60%; }
+  .moon.p5{ background:var(--gold); }
+  .moon.p5::after{ display:none; }
+
+  header{
+    position:sticky; top:0; z-index:50;
+    background:rgba(239,231,220,0.94); backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav-wrap{ max-width:1100px; margin:0 auto; padding:16px 24px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  .brand{ display:flex; align-items:center; gap:12px; cursor:pointer; }
+  .brand-logo{ height:46px; width:auto; display:block; cursor:zoom-in; }
+  .brand-name{ font-size:1.3rem; }
+  .brand-tag{ font-size:0.66rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--sage); cursor:pointer; }
+
+  .logo-lightbox{
+    display:none; position:fixed; inset:0; z-index:200;
+    background:rgba(10,9,8,0.92); backdrop-filter:blur(6px);
+    align-items:center; justify-content:center; padding:40px; cursor:zoom-out;
+  }
+  .logo-lightbox.open{ display:flex; }
+  .logo-lightbox img{ max-width:min(500px, 88vw); max-height:80vh; width:auto; height:auto; filter:drop-shadow(0 20px 60px rgba(0,0,0,0.5)); }
+
+  .curate-strip{ max-width:1000px; margin:8px auto 0; padding:0 24px; text-align:center; }
+  .curate-img{ width:100%; max-width:820px; height:auto; opacity:0.94; }
+  .nav-links{ display:flex; align-items:center; gap:22px; }
+  .nav-links a{ font-size:0.85rem; font-weight:600; text-decoration:none; cursor:pointer; }
+  .nav-links a.wholesale-link{ color:var(--gold); border:1px solid var(--gold); padding:8px 16px; border-radius:100px; }
+  .cart-btn{
+    display:flex; align-items:center; gap:8px; background:var(--forest); color:var(--cream);
+    border:none; padding:10px 18px; border-radius:100px; font-family:'Work Sans'; font-size:0.85rem;
+    font-weight:600; cursor:pointer; white-space:nowrap;
+  }
+  .cart-count{ background:var(--gold); color:var(--cream); border-radius:50%; width:20px; height:20px; display:flex; align-items:center; justify-content:center; font-size:0.72rem; font-weight:700; }
+
+  .search-btn{
+    background:transparent; border:1px solid var(--line); width:38px; height:38px; border-radius:50%;
+    font-size:0.95rem; cursor:pointer; flex:none;
+  }
+  .search-overlay{
+    display:none; position:fixed; inset:0; z-index:120; background:var(--cream);
+    flex-direction:column;
+  }
+  .search-overlay.open{ display:flex; }
+  .search-overlay-head{ display:flex; align-items:center; gap:12px; padding:16px 20px; border-bottom:1px solid var(--line); flex:none; }
+  .search-overlay-head input{
+    flex:1; border:1px solid var(--line); background:#fff; border-radius:100px; padding:12px 20px;
+    font-family:'Work Sans'; font-size:0.95rem; color:var(--forest);
+  }
+  .search-results{ padding:20px 24px 60px; overflow-y:auto; flex:1; max-width:1100px; margin:0 auto; width:100%; }
+  .search-empty{ text-align:center; color:rgba(23,20,18,0.5); font-size:0.9rem; padding:60px 24px; grid-column:1/-1; }
+
+  /* Hero */
+  .hero{ max-width:1100px; margin:0 auto; padding:60px 24px 30px; }
+  .eyebrow{ display:flex; align-items:center; gap:8px; font-size:0.72rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--sage); margin-bottom:18px; }
+  .hero p{ font-size:1.02rem; color:rgba(23,20,18,0.75); max-width:62ch; margin-bottom:26px; }
+  .hero-actions{ display:flex; gap:12px; flex-wrap:wrap; }
+  .btn-primary{ background:var(--forest); color:var(--cream); border:none; padding:14px 26px; border-radius:100px; font-weight:600; font-size:0.9rem; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:8px; }
+  .btn-ghost{ border:1px solid var(--forest); color:var(--forest); background:transparent; padding:14px 26px; border-radius:100px; font-weight:600; font-size:0.9rem; text-decoration:none; display:inline-flex; align-items:center; gap:8px; cursor:pointer; }
+
+  /* Collections */
+  .collections{ max-width:1100px; margin:0 auto; padding:36px 24px 10px; display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .collection-card{ position:relative; border-radius:var(--radius); padding:36px 28px; min-height:190px; display:flex; flex-direction:column; justify-content:flex-end; cursor:pointer; overflow:hidden; }
+  .collection-card.heritage{
+    background:linear-gradient(135deg, rgba(23,20,18,0.75), rgba(107,84,58,0.6)), url('assets/kente-woman.jpg') center 20%/cover;
+    color:var(--cream);
+  }
+  .collection-card.beauty{ background:linear-gradient(135deg, #1A1613, #3A322C); color:var(--cream); }
+  .collection-card .eyebrow{ color:var(--gold-soft); margin-bottom:10px; }
+  .collection-card h3{ font-size:1.5rem; color:#fff; margin-bottom:8px; }
+  .collection-card p{ font-size:0.86rem; color:rgba(255,255,255,0.75); max-width:36ch; }
+  .collection-card .arrow{ position:absolute; top:28px; right:28px; font-size:1.3rem; color:var(--gold-soft); }
+
+  /* Rituals */
+  .rituals{ max-width:1100px; margin:0 auto; padding:56px 24px 10px; }
+  .rituals .cat-head{ display:flex; align-items:center; gap:14px; margin-bottom:8px; }
+  .rituals h2{ font-size:1.7rem; }
+  .rituals .cat-sub{ color:rgba(23,20,18,0.6); font-size:0.92rem; margin:6px 0 28px 28px; }
+  .ritual-card{
+    position:relative;
+    display:flex; gap:24px; align-items:center; background:#fff; border:1px solid var(--line); border-radius:var(--radius);
+    padding:28px; flex-wrap:wrap;
+  }
+  .ritual-badge{ background:var(--gold); color:var(--cream); font-size:0.68rem; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; padding:6px 12px; border-radius:100px; display:inline-block; margin-bottom:10px; }
+  .ritual-body{ flex:1; min-width:240px; }
+  .ritual-body h3{ font-size:1.3rem; margin-bottom:8px; }
+  .ritual-body p{ color:rgba(23,20,18,0.65); font-size:0.9rem; max-width:52ch; margin-bottom:14px; }
+  .ritual-price{ display:flex; align-items:baseline; gap:10px; }
+  .ritual-price .now{ font-size:1.3rem; font-weight:700; }
+  .ritual-price .old{ text-decoration:line-through; color:rgba(23,20,18,0.4); font-size:0.9rem; }
+
+  section.cat{ max-width:1100px; margin:0 auto; padding:56px 24px 8px; scroll-margin-top:84px; }
+  .cat-head{ display:flex; align-items:center; gap:14px; margin-bottom:6px; }
+  .cat-head h2{ font-size:1.7rem; }
+  .cat-sub{ color:rgba(23,20,18,0.6); font-size:0.92rem; margin:6px 0 28px 28px; }
+
+  .grid{ display:grid; grid-template-columns:1fr 1fr; gap:6px; padding-bottom:8px; }
+  .card{ border:1px solid var(--line); border-radius:var(--radius); background:#fff; display:flex; flex-direction:column; overflow:hidden; }
+  @media (min-width:640px){
+    .grid{ grid-template-columns:repeat(auto-fill, minmax(220px,1fr)); gap:20px; }
+  }
+  .card-img, .card-img-placeholder{ width:100%; aspect-ratio:1/1; object-fit:cover; display:block; cursor:zoom-in; }
+  .card-img-placeholder{ background:linear-gradient(135deg,#1A1613,#3A322C); display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,0.55); font-family:'Fraunces',serif; font-style:italic; font-size:0.8rem; text-align:center; padding:16px; cursor:default; }
+  .card-body{ padding:8px 10px 10px; display:flex; flex-direction:column; gap:4px; flex:1; }
+  @media (min-width:640px){ .card-body{ padding:12px 14px 14px; } }
+
+  .product-lightbox{
+    display:none; position:fixed; inset:0; z-index:200;
+    background:rgba(10,9,8,0.92); backdrop-filter:blur(6px);
+    align-items:center; justify-content:center; padding:24px; cursor:zoom-out;
+  }
+  .product-lightbox.open{ display:flex; }
+  .product-lightbox-inner{ display:flex; flex-direction:column; align-items:center; gap:14px; max-width:100%; }
+  .product-lightbox-imgwrap{ position:relative; display:flex; align-items:center; justify-content:center; }
+  .product-lightbox-imgwrap img{ max-width:min(480px, 82vw); max-height:58vh; width:auto; height:auto; border-radius:var(--radius); object-fit:contain; box-shadow:0 20px 60px rgba(0,0,0,0.5); }
+  .lightbox-arrow{
+    background:rgba(255,255,255,0.9); border:none; color:var(--forest); width:38px; height:38px; border-radius:50%;
+    font-size:1.4rem; line-height:1; cursor:pointer; flex:none; margin:0 -8px; z-index:2; position:relative;
+  }
+  .lightbox-arrow:hover{ background:#fff; }
+  .product-lightbox-dots{ display:flex; gap:7px; flex-wrap:wrap; justify-content:center; max-width:320px; }
+  .product-lightbox-dots span{ width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,0.35); cursor:pointer; }
+  .product-lightbox-dots span.active{ background:var(--gold-soft); }
+  .product-lightbox-title{ color:rgba(239,231,220,0.85); font-size:0.85rem; text-align:center; }
+  .product-lightbox-actions{ display:flex; gap:12px; }
+  .product-lightbox-close{ background:transparent; color:#fff; border-color:rgba(255,255,255,0.6); }
+  .card h3{ font-size:0.82rem; font-weight:600; line-height:1.25; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; }
+  .card .note{ font-size:0.7rem; color:rgba(23,20,18,0.55); overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; }
+  .price-row{ display:flex; align-items:baseline; gap:6px; margin-top:auto; flex-wrap:wrap; }
+  .price-now{ font-size:0.98rem; font-weight:700; }
+  .price-old{ font-size:0.74rem; text-decoration:line-through; color:rgba(23,20,18,0.4); }
+  .add-btn{ margin-top:4px; width:100%; border:1px solid var(--forest); background:transparent; color:var(--forest); padding:6px; border-radius:100px; font-weight:600; font-size:0.7rem; cursor:pointer; transition:background 0.15s, color 0.15s; }
+  @media (min-width:640px){
+    .card h3{ font-size:1.05rem; }
+    .card .note{ font-size:0.82rem; }
+    .price-now{ font-size:1.15rem; }
+    .price-old{ font-size:0.85rem; }
+    .add-btn{ padding:10px; font-size:0.82rem; }
+  }
+  .add-btn:hover{ background:var(--forest); color:var(--cream); }
+  .add-btn.added{ background:var(--sage); color:#fff; border-color:var(--sage); }
+  .add-btn.disabled, .add-btn:disabled{ opacity:0.5; cursor:not-allowed; }
+  .add-btn.disabled:hover, .add-btn:disabled:hover{ background:transparent; color:var(--forest); }
+
+  .variant-row{ display:flex; gap:5px; flex-wrap:wrap; margin:2px 0; max-width:100%; overflow:hidden; }
+  .variant-dot{ width:18px; height:18px; border-radius:50%; background-size:cover; background-position:center; border:2px solid transparent; cursor:pointer; flex:none; }
+  .variant-dot.active{ border-color:var(--gold); box-shadow:0 0 0 1px var(--gold); }
+
+  .option-block{ margin:3px 0; }
+  .option-label{ font-size:0.64rem; text-transform:uppercase; letter-spacing:0.05em; color:rgba(23,20,18,0.55); margin-bottom:3px; }
+  .option-pill-row{ display:flex; gap:5px; flex-wrap:wrap; margin-bottom:2px; }
+  .option-pill{ font-size:0.66rem; padding:4px 9px; border:1px solid var(--line); border-radius:100px; background:#fff; color:var(--forest); cursor:pointer; white-space:nowrap; }
+  .option-pill.active{ background:var(--forest); color:var(--cream); border-color:var(--forest); }
+
+  .stock-badge{ font-size:0.6rem; text-transform:uppercase; letter-spacing:0.05em; font-weight:700; padding:3px 8px; border-radius:100px; display:none; margin-left:6px; vertical-align:middle; }
+  .stock-oos{ background:#e4d3c8; color:#7a3b2a; }
+  .stock-soon{ background:var(--gold-soft); color:var(--forest); }
+  .stock-low{ display:none; font-size:0.6rem; color:#7a3b2a; margin-left:6px; font-weight:600; }
+
+  /* Delivery band */
+  .delivery-band{ max-width:1100px; margin:50px auto 0; padding:0 24px; }
+  .delivery-card{ background:var(--forest); color:var(--cream); border-radius:var(--radius); padding:32px 28px; display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
+  .delivery-icon{ width:48px; height:48px; border-radius:50%; background:var(--gold); color:var(--cream); display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex:none; }
+  .delivery-text{ flex:1; min-width:220px; }
+  .delivery-text .eyebrow{ color:var(--gold-soft); margin-bottom:6px; }
+  .delivery-text h3{ font-size:1.25rem; color:#fff; margin-bottom:4px; }
+  .delivery-text p{ color:rgba(239,231,220,0.8); font-size:0.88rem; margin:0; }
+  .delivery-note{ font-size:0.74rem; color:rgba(239,231,220,0.55); margin-top:10px; }
+
+  /* Reviews */
+  .reviews-head{ display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:12px; margin-bottom:28px; }
+  .reviews-avg{ font-size:0.95rem; color:var(--sage); }
+  .reviews-avg .stars{ color:var(--gold); letter-spacing:2px; margin-right:6px; }
+  .reviews-list{ display:grid; gap:14px; margin-bottom:28px; }
+  @media (min-width:640px){ .reviews-list{ grid-template-columns:1fr 1fr; } }
+  .review-card{ border:1px solid var(--line); border-radius:var(--radius); background:#fff; padding:20px; position:relative; }
+  .review-card.featured{ border-color:var(--gold); background:linear-gradient(135deg, rgba(167,138,107,0.08), #fff); }
+  .review-card .stars{ color:var(--gold); letter-spacing:2px; font-size:0.95rem; margin-bottom:8px; }
+  .review-card .featured-tag{ position:absolute; top:16px; right:16px; font-size:0.62rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--gold); font-weight:700; }
+  .review-card .comment{ font-size:0.9rem; color:rgba(23,20,18,0.8); line-height:1.5; margin-bottom:10px; }
+  .review-card .meta{ font-size:0.78rem; color:rgba(23,20,18,0.55); }
+  .review-form{ margin-top:20px; border:1px solid var(--line); border-radius:var(--radius); background:#fff; padding:24px; max-width:520px; }
+  .review-form h3{ font-size:1.1rem; margin-bottom:16px; }
+  .star-picker{ display:flex; gap:6px; margin-bottom:16px; }
+  .star-picker span{ font-size:1.6rem; cursor:pointer; color:rgba(23,20,18,0.25); }
+  .star-picker span.active{ color:var(--gold); }
+  .reviews-empty{ color:rgba(23,20,18,0.5); font-size:0.9rem; }
+
+  /* Wholesale page */
+  .wholesale-hero{ background:var(--forest); color:var(--cream); padding:70px 24px 60px; }
+
+  .category-hero{
+    position:relative; min-height:380px; display:flex; align-items:flex-end;
+    background-size:cover; background-position:top center; overflow:hidden;
+  }
+  .category-hero-overlay{
+    position:absolute; inset:0;
+    background:linear-gradient(180deg, rgba(23,20,18,0.15) 0%, rgba(23,20,18,0.55) 65%, rgba(23,20,18,0.88) 100%);
+  }
+  .category-hero-inner{ position:relative; z-index:1; max-width:820px; margin:0 auto; padding:70px 24px 40px; color:var(--cream); width:100%; }
+  .category-hero-inner .back-link{ display:inline-flex; align-items:center; gap:6px; font-size:0.85rem; font-weight:600; color:var(--gold-soft); text-decoration:none; margin-bottom:20px; }
+  .category-hero-inner .eyebrow{ display:flex; align-items:center; gap:8px; font-size:0.72rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--gold-soft); margin-bottom:14px; }
+  .category-hero-inner h1{ font-size:clamp(1.8rem,4vw,2.4rem); margin-bottom:14px; }
+  .category-hero-inner p{ color:rgba(239,231,220,0.85); max-width:56ch; font-size:0.95rem; }
+  .wholesale-hero-inner{ max-width:820px; margin:0 auto; }
+  .wholesale-hero .eyebrow{ color:var(--gold-soft); }
+  .wholesale-hero h1{ font-size:clamp(2rem,4vw,2.8rem); margin-bottom:16px; }
+  .wholesale-hero p{ color:rgba(239,231,220,0.75); max-width:56ch; }
+  .wholesale-body{ max-width:820px; margin:0 auto; padding:48px 24px 90px; }
+  #page-category .wholesale-body{ max-width:1100px; padding-top:40px; }
+  .view-all-link{ font-size:0.82rem; font-weight:600; color:var(--sage); text-decoration:underline; cursor:pointer; margin-left:6px; white-space:nowrap; }
+  .wholesale-body h2{ font-size:1.3rem; margin-bottom:20px; }
+  .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+  .form-grid .full{ grid-column:1 / -1; }
+  label{ display:block; font-size:0.78rem; font-weight:600; margin-bottom:6px; color:var(--sage); text-transform:uppercase; letter-spacing:0.06em; }
+  input, textarea, select{
+    width:100%; border:1px solid var(--line); background:#fff; border-radius:var(--radius);
+    padding:12px 14px; font-family:'Work Sans'; font-size:0.92rem; color:var(--forest);
+  }
+  textarea{ resize:vertical; min-height:100px; }
+  .submit-btn{ background:var(--gold); color:var(--cream); border:none; padding:15px 30px; border-radius:100px; font-weight:700; font-size:0.92rem; cursor:pointer; }
+  .wholesale-note{ font-size:0.82rem; color:rgba(23,20,18,0.55); margin-top:14px; }
+  .back-link{ display:inline-flex; align-items:center; gap:6px; font-size:0.85rem; font-weight:600; color:var(--gold-soft); text-decoration:none; margin-bottom:20px; cursor:pointer; }
+
+  /* Cart drawer */
+  .drawer-overlay{ display:none; position:fixed; inset:0; background:rgba(23,20,18,0.4); z-index:80; }
+  .drawer-overlay.open{ display:block; }
+  .drawer{ position:fixed; top:0; right:0; height:100%; width:min(400px, 92vw); background:var(--cream); z-index:90; transform:translateX(100%); transition:transform 0.25s ease; display:flex; flex-direction:column; box-shadow:-8px 0 30px rgba(0,0,0,0.15); }
+  .drawer.open{ transform:translateX(0); }
+  .drawer-head{ padding:22px 24px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; }
+  .drawer-head h3{ font-size:1.2rem; }
+  .close-x{ background:none; border:none; font-size:1.4rem; cursor:pointer; color:var(--forest); }
+  .drawer-items{ flex-grow:1; overflow-y:auto; padding:12px 24px; }
+  .drawer-item{ display:flex; align-items:center; padding:12px 0; border-bottom:1px solid var(--line); gap:12px; }
+  .drawer-item-img{ width:48px; height:48px; object-fit:cover; border-radius:var(--radius); flex:none; border:1px solid var(--line); }
+  .drawer-item-noimg{ background:var(--line); }
+  .drawer-item-info{ display:flex; justify-content:space-between; align-items:center; flex:1; gap:10px; min-width:0; }
+  .drawer-item-info .name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .drawer-item .name{ font-size:0.88rem; }
+  .drawer-item .qty-price{ display:flex; align-items:center; gap:10px; font-size:0.85rem; }
+  .qty-btn{ border:1px solid var(--line); background:#fff; width:22px; height:22px; border-radius:50%; cursor:pointer; font-size:0.8rem; }
+  .empty-note{ color:rgba(23,20,18,0.5); font-size:0.9rem; padding:24px 0; text-align:center; }
+  .drawer-customer{ padding:16px 24px; border-top:1px solid var(--line); flex:none; }
+  .drawer-label{ display:block; font-size:0.72rem; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--sage); margin:10px 0 5px; }
+  .drawer-label:first-child{ margin-top:0; }
+  .drawer-customer input{ width:100%; border:1px solid var(--line); background:#fff; border-radius:var(--radius); padding:10px 12px; font-family:'Work Sans'; font-size:0.86rem; color:var(--forest); }
+  .drawer-foot{ padding:20px 24px 26px; border-top:1px solid var(--line); flex:none; }
+  .total-row{ display:flex; justify-content:space-between; font-weight:600; margin-bottom:16px; font-size:1.05rem; }
+  .total-row.sub{ font-weight:400; font-size:0.85rem; margin-bottom:8px; color:rgba(23,20,18,0.65); }
+  .checkout-btn{ width:100%; background:#25D366; color:#fff; border:none; padding:14px; border-radius:100px; font-weight:700; font-size:0.92rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:10px; }
+  .paystack-btn{ width:100%; background:var(--gold); color:var(--cream); border:none; padding:14px; border-radius:100px; font-weight:700; font-size:0.92rem; cursor:pointer; }
+  .foot-note{ font-size:0.72rem; color:rgba(23,20,18,0.55); margin-top:10px; text-align:center; }
+
+  .capture-band{ max-width:1100px; margin:70px auto 0; padding:0 24px; text-align:center; }
+  .capture-inner h2{ font-size:1.7rem; margin-bottom:8px; }
+  .capture-inner > p{ color:rgba(23,20,18,0.6); font-size:0.92rem; margin-bottom:24px; }
+  .capture-form{ display:flex; gap:10px; max-width:420px; margin:0 auto 30px; flex-wrap:wrap; justify-content:center; }
+  .capture-form input{ flex:1; min-width:220px; border:1px solid var(--line); background:#fff; border-radius:100px; padding:13px 20px; font-family:'Work Sans'; font-size:0.9rem; }
+  .capture-form button{ cursor:pointer; }
+  .social-row{ display:flex; justify-content:center; gap:26px; flex-wrap:wrap; }
+  .social-row a{ font-size:0.8rem; font-weight:600; letter-spacing:0.04em; text-decoration:none; color:var(--sage); border-bottom:1px solid transparent; }
+  .social-row a:hover{ border-color:var(--sage); }
+
+  .qr-band{ max-width:600px; margin:64px auto 0; padding:0 24px; text-align:center; }
+  .qr-band h2{ font-size:1.4rem; margin-bottom:8px; }
+  .qr-band p{ color:rgba(23,20,18,0.6); font-size:0.88rem; margin-bottom:22px; }
+  .qr-img{ width:180px; height:180px; border:1px solid var(--line); border-radius:var(--radius); background:#fff; padding:12px; margin-bottom:20px; }
+
+  .heritage-band{
+    margin-top:80px; position:relative; padding:80px 24px;
+    background:linear-gradient(rgba(23,20,18,0.82), rgba(23,20,18,0.88)), url('assets/kente-fabric.jpg') center/cover;
+  }
+  .heritage-band-inner{ max-width:640px; margin:0 auto; text-align:center; }
+  .heritage-quote{ font-family:'Fraunces', serif; font-style:italic; font-size:clamp(1.3rem,2.6vw,1.7rem); color:var(--cream); line-height:1.45; margin-bottom:16px; }
+  .heritage-caption{ font-size:0.72rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--gold-soft); }
+
+  footer{ background:var(--forest); color:var(--cream); }
+  .foot-wrap{ max-width:1100px; margin:0 auto; padding:52px 24px; display:grid; grid-template-columns:1.3fr 0.8fr 0.9fr 0.8fr; gap:28px; }
+  footer h3{ font-size:1.3rem; margin-bottom:10px; }
+  footer p{ color:rgba(239,231,220,0.7); font-size:0.9rem; max-width:36ch; }
+  .foot-col h4{ font-size:0.72rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--gold); margin-bottom:12px; }
+  .foot-col a{ display:block; color:rgba(239,231,220,0.85); text-decoration:none; font-size:0.9rem; margin-bottom:8px; cursor:pointer; }
+  .foot-bottom{ border-top:1px solid rgba(239,231,220,0.15); text-align:center; padding:18px; font-size:0.75rem; color:rgba(239,231,220,0.5); }
+
+  @media (max-width: 860px){
+    .collections{ grid-template-columns:1fr; }
+    .form-grid{ grid-template-columns:1fr; }
+    .foot-wrap{ grid-template-columns:1fr; }
+  }
+
+  /* ===== VELOUR-inspired restyle additions ===== */
+  .marquee-strip{
+    background:var(--forest); color:var(--gold-soft); overflow:hidden;
+    white-space:nowrap; padding:10px 0; border-bottom:1px solid rgba(239,231,220,0.12);
+  }
+  .marquee-track{
+    display:inline-block; padding-left:100%;
+    animation:mluna-marquee 24s linear infinite;
+    font-size:0.7rem; letter-spacing:0.16em; text-transform:uppercase; font-weight:600;
+  }
+  @keyframes mluna-marquee{ 0%{transform:translateX(0);} 100%{transform:translateX(-100%);} }
+
+  .mega-hero{ max-width:1100px; margin:0 auto; padding:44px 24px 8px; }
+  .mega-hero .eyebrow{ margin-bottom:14px; }
+  .mega-hero h1{
+    font-family:'Work Sans', sans-serif; font-weight:700;
+    font-size:clamp(2.2rem, 4.6vw, 3.4rem); line-height:1.08;
+    text-transform:uppercase; letter-spacing:-0.02em; margin-bottom:18px; max-width:none;
+  }
+  .mega-hero h1 .accent{
+    font-family:'Fraunces', serif; font-style:italic; font-weight:500;
+    text-transform:none; color:var(--sage); display:block;
+  }
+  .mega-hero p{ margin-top:6px; }
+
+  .stat-strip{ display:flex; gap:28px; flex-wrap:wrap; max-width:1100px; margin:30px auto 0; padding:0 24px 10px; }
+  .stat-strip div{ flex:1; min-width:110px; }
+  .stat-strip .num{ font-family:'Space Mono', monospace; font-size:1.6rem; font-weight:700; }
+  .stat-strip .lbl{ font-size:0.68rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--sage); margin-top:2px; }
+
+  .cat-nav-band{ max-width:1100px; margin:64px auto 0; padding:0 24px; display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:center; }
+  .cat-nav-list a{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:18px 0; border-bottom:1px solid var(--line); text-decoration:none;
+    color:var(--forest); font-family:'Fraunces', serif; font-size:1.4rem; cursor:pointer;
+  }
+  .cat-nav-list .count{ font-family:'Space Mono', monospace; font-size:0.8rem; color:var(--sage); }
+  .cat-nav-img{
+    position:relative; border-radius:var(--radius); overflow:hidden; min-height:300px;
+    background:linear-gradient(135deg, rgba(23,20,18,0.62), rgba(107,84,58,0.5)), url('assets/kente-woman.jpg') center/cover;
+    display:flex; align-items:flex-end; padding:26px; color:var(--cream);
+  }
+  .cat-nav-img p{ font-family:'Fraunces', serif; font-style:italic; font-size:1.1rem; max-width:30ch; }
+  @media (max-width:860px){ .cat-nav-band{ grid-template-columns:1fr; } .cat-nav-img{ order:-1; min-height:220px; } }
+
+  .badge-pct{
+    position:absolute; top:14px; right:14px; width:50px; height:50px; border-radius:50%;
+    background:var(--gold); color:var(--cream); display:flex; align-items:center; justify-content:center;
+    font-family:'Space Mono', monospace; font-weight:700; font-size:0.72rem; text-align:center; line-height:1.05;
+    box-shadow:0 4px 14px rgba(0,0,0,0.18); z-index:1;
+  }
+
+  .statement-band{ background:var(--forest); color:var(--cream); margin-top:80px; padding:70px 24px; }
+  .statement-band-inner{ max-width:1100px; margin:0 auto; }
+  .statement-band .eyebrow{ color:var(--gold-soft); margin-bottom:16px; }
+  .statement-band h2{
+    font-family:'Work Sans', sans-serif; font-weight:700;
+    font-size:clamp(1.8rem, 6vw, 3.1rem); text-transform:uppercase; line-height:1.05; max-width:20ch;
+  }
+  .statement-band .under{ width:60px; height:3px; background:var(--gold); margin:18px 0 24px; }
+  .statement-band p{ color:rgba(239,231,220,0.75); max-width:52ch; margin-bottom:24px; font-size:0.95rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav-wrap">
+    <div class="brand">
+      <img src="assets/logo.png" alt="MLuna Shop logo — African heritage fashion and beauty in Accra, Ghana" class="brand-logo" onclick="openLogoLightbox()">
+      <div class="brand-tag" onclick="showPage('shop')">African Heritage. Timeless Elegance.</div>
+    </div>
+    <div class="nav-links">
+      <a onclick="showPage('shop')">Retail Shop</a>
+      <a onclick="scrollToRituals()">Rituals</a>
+      <a class="wholesale-link" onclick="showPage('wholesale')">Wholesale &amp; Pre-Order</a>
+      <button class="search-btn" onclick="openSearch()" aria-label="Search products">🔍</button>
+      <button class="cart-btn" onclick="openDrawer()">Order List <span class="cart-count" id="cartCount">0</span></button>
+    </div>
+  </div>
+</header>
+
+<div class="logo-lightbox" id="logoLightbox" onclick="closeLogoLightbox()">
+  <img src="assets/logo-full.png" alt="MLuna Shop — full logo">
+</div>
+
+<div class="marquee-strip">
+  <span class="marquee-track">AFRICAN HERITAGE &nbsp;·&nbsp; ASANTE KENTE &nbsp;·&nbsp; SKINCARE RITUALS &nbsp;·&nbsp; GIFT SETS &nbsp;·&nbsp; NATIONWIDE DELIVERY &nbsp;·&nbsp; HANDCRAFTED IN GHANA &nbsp;·&nbsp; AFRICAN HERITAGE &nbsp;·&nbsp; ASANTE KENTE &nbsp;·&nbsp; SKINCARE RITUALS &nbsp;·&nbsp; GIFT SETS &nbsp;·&nbsp; NATIONWIDE DELIVERY &nbsp;·&nbsp; HANDCRAFTED IN GHANA &nbsp;·&nbsp;</span>
+</div>
+
+<!-- ============ SHOP PAGE ============ -->
+<div id="page-shop" class="page active">
+
+  <section class="mega-hero">
+    <div class="eyebrow"><div class="moon p0"></div> Retail Shop · Professional · Premium · Luxurious</div>
+    <h1>Where Heritage<span class="accent">Lives &amp; Luxury Follows.</span></h1>
+    <p>Welcome to MLuna Shop, where traditional African heritage meets modern self-care. We curate an exclusive collection of premium, hand-selected products that honor artistry and enhance well-being — from artisanal Kente textiles and handcrafted accessories to sophisticated beauty solutions.</p>
+    <p style="font-size:0.85rem; color:rgba(23,20,18,0.55); margin-top:0; margin-bottom:26px;">Your trusted fashion shop in Ghana for traditional wear, Kente cloth and gift sets — delivering nationwide.</p>
+    <div class="hero-actions">
+      <a href="#skin" class="btn-primary" onclick="showPage('shop')">Explore the Collection ↓</a>
+      <a onclick="showPage('wholesale')" class="btn-ghost">Request Wholesale Access</a>
+    </div>
+  </section>
+
+  <div class="stat-strip">
+    <div><div class="num">28+</div><div class="lbl">Curated Pieces</div></div>
+    <div><div class="num">6</div><div class="lbl">Collections</div></div>
+    <div><div class="num">100%</div><div class="lbl">Ghanaian Made</div></div>
+    <div><div class="num">Mon–Sat</div><div class="lbl">Open for Orders</div></div>
+  </div>
+
+  <section class="delivery-band">
+    <div class="delivery-card">
+      <div class="delivery-icon">🚚</div>
+      <div class="delivery-text">
+        <div class="eyebrow" style="margin-bottom:6px;"><div class="moon p5"></div> Nationwide Delivery</div>
+        <h3>We Deliver Anywhere in Ghana</h3>
+        <p>Estimated delivery: 3–5 working days, wherever you are in the country. Just add your delivery location when you order.</p>
+        <p class="delivery-note">*Delivery times are estimated, not guaranteed — they can vary slightly depending on your location and order volume.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="collections">
+    <div class="collection-card heritage" onclick="showCategoryPage('african')">
+      <span class="arrow">↗</span>
+      <div class="eyebrow">Curated Collection</div>
+      <h3>African Heritage</h3>
+      <p>Exquisitely handwoven, our Kente textiles represent the pinnacle of traditional craftsmanship.</p>
+    </div>
+    <div class="collection-card beauty" onclick="showCategoryPage('skin')">
+      <span class="arrow">↗</span>
+      <div class="eyebrow">Curated Collection</div>
+      <h3>Beauty &amp; Skincare</h3>
+      <p>Transform your daily ritual with our curated skincare series, formulated for radiance and vitality.</p>
+    </div>
+  </section>
+
+  <section class="curate-strip">
+    <img src="assets/icons.png" alt="MLuna Shop product categories: Kente cloth, beaded jewelry, traditional smocks, bridal accessories, and Ghanaian home decor" class="curate-img">
+  </section>
+
+  <section class="cat-nav-band">
+    <div class="cat-nav-list">
+      <a onclick="showCategoryPage('skin')">Skin &amp; Facial Care <span class="count">(9)</span></a>
+      <a onclick="showCategoryPage('hair')">Hair &amp; Beauty Accessories <span class="count">(5)</span></a>
+      <a onclick="showCategoryPage('african')">African Heritage <span class="count">(3)</span></a>
+      <a onclick="showCategoryPage('bags')">Bags &amp; Purses <span class="count">(5)</span></a>
+      <a onclick="showCategoryPage('gifts')">Gift Sets <span class="count">(4)</span></a>
+      <a onclick="showCategoryPage('home')">Home &amp; Lifestyle <span class="count">(3)</span></a>
+    </div>
+    <div class="cat-nav-img">
+      <p>"Every wrap carries a story woven through generations."</p>
+    </div>
+  </section>
+
+  <section class="rituals" id="rituals">
+    <div class="cat-head"><div class="moon p0"></div><h2>Featured Ritual</h2></div>
+    <p class="cat-sub">Our expert-selected skincare ritual of the season.</p>
+    <div class="ritual-card">
+      <span class="badge-pct">SAVE<br>6%</span>
+      <img id="ritualImg" src="" alt="Skin Care Combo" style="display:none; width:140px; height:140px; object-fit:cover; border-radius:var(--radius); flex:none;">
+      <div class="ritual-body">
+        <span class="ritual-badge">Expert Selection</span>
+        <h3>Skin Care Combo</h3>
+        <p>Vitamin C, Retinol, Salicylic Acid, Vitamin E &amp; Collagen series — a complete regimen assembled for radiance, renewal, and everyday nourishment.</p>
+        <div class="ritual-price">
+          <span class="price now">GHC 450.00</span>
+          <span class="price old">GHC 480.00</span>
+        </div>
+      </div>
+      <button class="add-btn" style="width:auto; padding:14px 28px;" onclick="addToCart('skin',0,this)">Elevate Your Ritual</button>
+    </div>
+  </section>
+
+  <section class="cat" id="skin">
+    <div class="cat-head"><div class="moon p0"></div><h2>Beauty &amp; Skincare</h2></div>
+    <p class="cat-sub">Sadoer series, cleansing tools and combo sets — formulated for radiance and vitality. <a class="view-all-link" onclick="showCategoryPage('skin')">View all →</a></p>
+    <div class="grid" id="grid-skin"></div>
+  </section>
+
+  <section class="cat" id="hair">
+    <div class="cat-head"><div class="moon p1"></div><h2>Hair &amp; Beauty Accessories</h2></div>
+    <p class="cat-sub">Clips, ties, curl care and mini makeup sets. <a class="view-all-link" onclick="showCategoryPage('hair')">View all →</a></p>
+    <div class="grid" id="grid-hair"></div>
+  </section>
+
+  <section class="cat" id="african">
+    <div class="cat-head"><div class="moon p2"></div><h2>African Heritage</h2></div>
+    <p class="cat-sub">Exquisitely handwoven Kente and traditional scarves. <a class="view-all-link" onclick="showCategoryPage('african')">View all →</a></p>
+    <div class="grid" id="grid-african"></div>
+  </section>
+
+  <section class="cat" id="bags">
+    <div class="cat-head"><div class="moon p3"></div><h2>Bags &amp; Purses</h2></div>
+    <p class="cat-sub">Everyday carry, makeup cases and mini luggage. <a class="view-all-link" onclick="showCategoryPage('bags')">View all →</a></p>
+    <div class="grid" id="grid-bags"></div>
+  </section>
+
+  <section class="cat" id="gifts">
+    <div class="cat-head"><div class="moon p4"></div><h2>Gift Sets</h2></div>
+    <p class="cat-sub">Thoughtfully assembled — the ultimate expression of care. <a class="view-all-link" onclick="showCategoryPage('gifts')">View all →</a></p>
+    <div class="grid" id="grid-gifts"></div>
+  </section>
+
+  <section class="cat" id="home">
+    <div class="cat-head"><div class="moon p5"></div><h2>Home &amp; Lifestyle</h2></div>
+    <p class="cat-sub">Small comforts for the house. <a class="view-all-link" onclick="showCategoryPage('home')">View all →</a></p>
+    <div class="grid" id="grid-home"></div>
+  </section>
+
+  <div id="dynamicCategories"></div>
+
+  <section class="statement-band">
+    <div class="statement-band-inner">
+      <div class="eyebrow"><div class="moon p5"></div> Straight From Accra — Nationwide</div>
+      <h2>Fast-Moving Heritage &amp; Beauty, Delivered To Your Door</h2>
+      <div class="under"></div>
+      <p>New arrivals move quickly — from genuine Asante Kente to Sadoer skincare combos. Order on WhatsApp today; estimated delivery is 3–5 working days, anywhere in Ghana.</p>
+      <a onclick="showPage('wholesale')" class="btn-ghost" style="border-color:var(--gold-soft); color:var(--gold-soft);">Request Wholesale Access</a>
+    </div>
+  </section>
+
+  <section class="wholesale-body" id="reviewsSection" style="max-width:1100px; padding-top:0;">
+    <div class="reviews-head">
+      <div>
+        <div class="eyebrow"><div class="moon p5"></div> Customer Reviews</div>
+        <h2 style="font-size:1.5rem;">What Our Customers Say</h2>
+      </div>
+      <div class="reviews-avg" id="reviewsAvg">No reviews yet</div>
+    </div>
+    <div class="reviews-list" id="reviewsList"><p class="reviews-empty">Be the first to leave a review.</p></div>
+    <button class="btn-ghost" onclick="toggleReviewForm()" id="reviewFormToggle">Write a Review</button>
+    <form id="reviewForm" class="review-form" style="display:none;" onsubmit="return submitReview(event)">
+      <h3>Share Your Experience</h3>
+      <label>Your Name</label>
+      <input type="text" id="revName" required style="margin-bottom:16px;">
+      <label>Rating</label>
+      <div class="star-picker" id="starPicker">
+        <span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span>
+      </div>
+      <label>Which product? (optional)</label>
+      <select id="revProduct" style="margin-bottom:16px;"><option value="">General experience</option></select>
+      <label>Your Review</label>
+      <textarea id="revComment" required style="margin-bottom:16px;" placeholder="Tell us what you thought..."></textarea>
+      <button type="submit" class="submit-btn">Submit Review</button>
+      <p style="font-size:0.78rem; color:rgba(23,20,18,0.5); margin-top:10px;">Reviews are checked before appearing publicly. We only ever show your name — no contact details are displayed.</p>
+    </form>
+  </section>
+
+</div>
+
+<!-- ============ WHOLESALE / PRE-ORDER PAGE ============ -->
+<div id="page-wholesale" class="page">
+  <div class="wholesale-hero">
+    <div class="wholesale-hero-inner">
+      <a class="back-link" onclick="showPage('shop')">← Back to Retail Shop</a>
+      <div class="eyebrow"><div class="moon p5"></div> Exclusive Pre-Order Access</div>
+      <h1>Request Wholesale Access</h1>
+      <p>A dedicated space for wholesale partners and pre-order clients. Tell us what you need — Kodiya's team will reach out personally to confirm availability, pricing, and delivery before anything is finalised.</p>
+    </div>
+  </div>
+  <div class="wholesale-body">
+    <h2>Inquire for Partnership</h2>
+    <form id="wholesaleForm" onsubmit="return submitWholesale(event)">
+      <div class="form-grid">
+        <div>
+          <label>Full Name</label>
+          <input type="text" id="wsName" required>
+        </div>
+        <div>
+          <label>Phone Number</label>
+          <input type="tel" id="wsPhone" required>
+        </div>
+        <div>
+          <label>Email</label>
+          <input type="email" id="wsEmail" required>
+        </div>
+        <div>
+          <label>Business / Shop Name</label>
+          <input type="text" id="wsBusiness" placeholder="If applicable">
+        </div>
+        <div class="full">
+          <label>Inquiry Type</label>
+          <select id="wsType">
+            <option>Wholesale Partnership</option>
+            <option>Bulk Pre-Order</option>
+            <option>Custom Kente Order</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="full">
+          <label>Products &amp; Quantities of Interest</label>
+          <textarea id="wsProducts" placeholder="e.g. 20 yards Asante Kente, 15 Skin Care Combo sets..."></textarea>
+        </div>
+        <div class="full">
+          <label>Additional Notes</label>
+          <textarea id="wsNotes" placeholder="Delivery timeline, budget range, anything else we should know"></textarea>
+        </div>
+      </div>
+      <button type="submit" class="submit-btn">Submit Inquiry</button>
+      <p class="wholesale-note">We'll follow up by WhatsApp or email within 24 hours to book a personal consultation before confirming any order.</p>
+    </form>
+  </div>
+</div>
+
+<!-- ============ CATEGORY PAGE ============ -->
+<div id="page-category" class="page">
+  <div class="category-hero" id="categoryHero">
+    <div class="category-hero-overlay"></div>
+    <div class="category-hero-inner">
+      <a class="back-link" onclick="showPage('shop')">← Back to Retail Shop</a>
+      <div class="eyebrow"><div class="moon p5"></div> Category</div>
+      <h1 id="categoryPageTitle">Category</h1>
+      <p id="categoryPageSub"></p>
+    </div>
+  </div>
+  <div class="wholesale-body">
+    <div class="grid" id="categoryPageGrid"></div>
+  </div>
+</div>
+
+<section class="capture-band">
+  <div class="capture-inner">
+    <h2>Stay in the loop</h2>
+    <p>New arrivals, restocks and gift-set drops — straight to your inbox and WhatsApp.</p>
+    <form class="capture-form" onsubmit="return submitNewsletter(event)">
+      <input type="email" id="newsEmail" placeholder="you@email.com" required>
+      <button type="submit" class="btn-primary" style="border-radius:100px;">Join the List</button>
+    </form>
+    <div class="social-row">
+      <a href="https://wa.me/233207657029" target="_blank" aria-label="WhatsApp">WhatsApp</a>
+      <a href="https://instagram.com/mlunent" target="_blank" aria-label="Instagram">Instagram</a>
+      <a href="https://facebook.com/mlunent" target="_blank" aria-label="Facebook">Facebook</a>
+      <a href="https://tiktok.com/@mluna.entreprise" target="_blank" aria-label="TikTok">TikTok</a>
+    </div>
+  </div>
+</section>
+
+<section class="qr-band">
+  <div class="qr-inner">
+    <h2>Share MLuna Shop</h2>
+    <p>Scan to open the store, or download the code to print on flyers, packaging or business cards.</p>
+    <img id="qrImg" class="qr-img" alt="QR code linking to MLuna Shop" src="">
+    <button onclick="downloadQrCode()" class="btn-primary">Download QR Code</button>
+  </div>
+</section>
+
+<section class="heritage-band">
+  <div class="heritage-band-inner">
+    <div class="moon p5" style="margin:0 auto 18px;"></div>
+    <p class="heritage-quote">"Exquisitely handwoven, our Kente textiles represent the pinnacle of traditional craftsmanship."</p>
+    <span class="heritage-caption">Genuine Asante Kente — sourced and curated with care</span>
+  </div>
+</section>
+
+<footer>
+  <div class="foot-wrap">
+    <div>
+      <img src="assets/logo.png" alt="MLuna Shop — traditional wear and premium accessories, Accra Ghana" style="height:52px; width:auto; margin-bottom:14px;">
+      <p>Welcome to MLuna Shop, where traditional African heritage meets modern self-care — a curated collection of premium, hand-selected pieces, delivered nationwide.</p>
+    </div>
+    <div class="foot-col">
+      <h4>Retail Shop</h4>
+      <a onclick="showPage('shop')">Explore the Collection</a>
+      <a onclick="showPage('wholesale')">Request Wholesale Access</a>
+    </div>
+    <div class="foot-col">
+      <h4>Contact</h4>
+      <a href="mailto:mawuenaagbogah0@gmail.com">mawuenaagbogah0@gmail.com</a>
+      <a href="https://wa.me/233207657029" target="_blank">WhatsApp Us</a>
+      <a>Makavo Junction, Accra-Lome Rd</a>
+    </div>
+    <div class="foot-col">
+      <h4>Follow</h4>
+      <a href="https://instagram.com/mlunent" target="_blank" aria-label="Instagram">Instagram</a>
+      <a href="https://facebook.com/mlunent" target="_blank" aria-label="Facebook">Facebook</a>
+      <a href="https://tiktok.com/@mluna.entreprise" target="_blank" aria-label="TikTok">TikTok</a>
+    </div>
+  </div>
+  <div class="foot-bottom">MLuna Shop · +233 20 765 7029 · Nationwide Delivery · Mon–Sat · <a href="admin.html" style="color:rgba(239,231,220,0.5); text-decoration:underline;">Store Admin</a></div>
+</footer>
+
+<div class="search-overlay" id="searchOverlay">
+  <div class="search-overlay-head">
+    <input type="text" id="searchInput" placeholder="Search products…" oninput="renderSearchResults(this.value)" autocomplete="off">
+    <button class="close-x" onclick="closeSearch()">&times;</button>
+  </div>
+  <div class="search-results grid" id="searchResults"></div>
+</div>
+
+<div class="drawer-overlay" id="overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-head">
+    <h3>Your Order</h3>
+    <button class="close-x" onclick="closeDrawer()">&times;</button>
+  </div>
+  <div class="drawer-items" id="drawerItems">
+    <p class="empty-note">No items yet — tap "Secure Your Piece" on anything you like.</p>
+  </div>
+  <div class="drawer-customer">
+    <label class="drawer-label">Your Name</label>
+    <input type="text" id="custName" placeholder="Full name">
+    <label class="drawer-label">Phone / WhatsApp Number</label>
+    <input type="tel" id="custPhone" placeholder="e.g. 024 123 4567">
+    <label class="drawer-label">Delivery Address</label>
+    <input type="text" id="custAddress" placeholder="Area, landmark, city/region">
+    <span style="font-size:0.72rem; color:rgba(23,20,18,0.5); display:block; margin-top:4px;">We deliver nationwide — just tell us your city or region.</span>
+  </div>
+  <div class="drawer-foot">
+    <div class="total-row sub"><span>Subtotal</span><span class="price" id="subtotalAmt">GHC 0.00</span></div>
+    <div class="total-row sub"><span>Delivery</span><span class="price" id="deliveryAmt">GHC 35.00</span></div>
+    <div class="total-row"><span>Total</span><span class="price" id="totalAmt">GHC 0.00</span></div>
+    <button class="checkout-btn" onclick="sendWhatsApp()">Send Order on WhatsApp</button>
+    <button class="paystack-btn" onclick="payNow()">Pay Now with Paystack</button>
+    <p class="foot-note">Nationwide delivery — estimated 3–5 working days. Delivery fee shown is a base estimate; confirm your order on WhatsApp first, where final delivery cost, timing for your location, and payment method (Cash, MoMo or Paystack) get sorted.</p>
+  </div>
+</div>
+
+<div class="product-lightbox" id="productLightbox" onclick="if(event.target===this) closeProductLightbox()">
+  <div class="product-lightbox-inner">
+    <div class="product-lightbox-imgwrap">
+      <button class="lightbox-arrow lightbox-arrow-prev" onclick="lightboxPrev()" aria-label="Previous photo">‹</button>
+      <img id="productLightboxImg" src="" alt="">
+      <button class="lightbox-arrow lightbox-arrow-next" onclick="lightboxNext()" aria-label="Next photo">›</button>
+    </div>
+    <div id="productLightboxDots" class="product-lightbox-dots"></div>
+    <p id="productLightboxTitle" class="product-lightbox-title"></p>
+    <div class="product-lightbox-actions">
+      <button onclick="downloadProductImage()" class="btn-primary">Download Photo</button>
+      <button onclick="closeProductLightbox()" class="btn-ghost product-lightbox-close">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+  const firebaseConfig = {
+  apiKey: "AIzaSyAwmoI-TqC5b1QbC5FZUD6qLgjR79aHpl8",
+  authDomain: "maluna-fab51.firebaseapp.com",
+  projectId: "maluna-fab51",
+  storageBucket: "maluna-fab51.firebasestorage.app",
+  messagingSenderId: "409531878868",
+  appId: "1:409531878868:web:f326890272edc737679a41"
+  };
+</script>
+<script src="https://js.paystack.co/v1/inline.js"></script>
+<script>
+  const DEFAULT_PRODUCTS = {
+    skin: [
+      {n:"Skin Care Combo", note:"Vitamin C, Retinol, Salicylic & Collagen series", price:450, old:480},
+      {n:"Sadoer Fruit Facial Mask", note:"Green tea, hydrating", price:30, old:35},
+      {n:"Sadoer Combo Lip & Eye Mask", note:"3-in-1 series pack", price:23, old:25},
+      {n:"Sadoer Hand Cream (6pc)", note:"Moisten & nourish set", price:50, old:55},
+      {n:"Facial Cleanser Brush", note:"Double-sided silicone", price:65, old:70},
+      {n:"Facial Massage & Cleansing Brush", note:"Soft silicone, 2 colours", price:40, old:45},
+      {n:"7-in-1 Facial Cleansing Kit", note:"Multi-head cleansing set", price:95, old:100},
+      {n:"11-Piece Facial Application Set", note:"Headband, brushes & tools", price:70, old:75},
+      {n:"LED Vanity Mirror", note:"Touch-light desktop mirror", price:55, old:60},
+    ],
+    hair: [
+      {n:"Hair Clip Set", note:"Gradient pink claw clips", price:65, old:70},
+      {n:"Hair Tie Set", note:"20-piece colourful pack", price:50, old:55},
+      {n:"Hair Accessories Pack", note:"Black & blue only", price:60, old:65},
+      {n:"Styling Curl Keeper", note:"780ml, moisture lock", price:30, old:35},
+      {n:"8-Piece Mini Makeup Set", note:"Travel brush set", price:43, old:45},
+    ],
+    african: [
+      {n:"6 Yards Asante Kente", note:"Authentic weave — pricing from GHC 1,200", price:2800, old:3000},
+      {n:"Kente Cloth — 2 Yards", note:"High quality women's kente", price:350, old:450},
+      {n:"Quality Traditional Scarf", note:"Range GHC 50–130 depending on style", price:45, old:130},
+    ],
+    bags: [
+      {n:"Hand Bag", note:"Structured everyday bag", price:100, old:120},
+      {n:"Versatile Bag", note:"Designer-style tote", price:70, old:75},
+      {n:"Hand Purse", note:"Compact wristlet", price:70, old:75},
+      {n:"Bucket Bag Makeup Case", note:"Small & large sizes available", price:110, old:120},
+      {n:"Mini Suit Case", note:"Hardshell, multiple colours", price:135, old:150},
+    ],
+    gifts: [
+      {n:"Gift Set Perfume", note:"Lattafa set — choose any from the set", price:250, old:260},
+      {n:"Perfume Atomizer", note:"1 piece, travel size", price:12, old:13},
+      {n:"Fruit Scented Diffuser (Loris)", note:"Reed diffuser, citrus notes", price:85, old:90},
+      {n:"Gift Set — Fan & Flask", note:"Cup, hand fan & umbrella combo", price:200, old:250},
+    ],
+    home: [
+      {n:"Hand Fan", note:"4 fruit colourways", price:40, old:45},
+      {n:"3-Piece Towel Set", note:"Off-white, gift-boxed", price:110, old:120},
+      {n:"Egg Sliding Storage Container", note:"Holds ~30 eggs", price:30, old:35},
+    ],
+  };
+  const CATEGORY_LABELS = {skin:"Skin & Facial Care", hair:"Hair & Beauty Accessories", african:"African Heritage", bags:"Bags & Purses", gifts:"Gift Sets", home:"Home & Lifestyle"};
+
+  function buildBaseProducts(){
+    const base = {};
+    for(const cat in DEFAULT_PRODUCTS){
+      base[cat] = DEFAULT_PRODUCTS[cat].map((p,i) => ({
+        ...p, images:[], variants:[], optionGroups:[], status:'in_stock', quantity:null, comboStock:{}, archived:false, starterKey:cat+'-'+i, docId:null, isStarter:true
+      }));
+    }
+    return base;
+  }
+  let PRODUCTS = buildBaseProducts();
+  let customCategoryLabels = {};
+  const cart = {};
+  let selectedVariantIndex = {};
+  let selectedOptionChoice = {};
+
+  const CATEGORY_PAGE_INFO = {
+    skin: {title:'Beauty & Skincare', sub:'Sadoer series, cleansing tools and combo sets — formulated for radiance and vitality.'},
+    hair: {title:'Hair & Beauty Accessories', sub:'Clips, ties, curl care and mini makeup sets.'},
+    african: {title:'African Heritage', sub:'Exquisitely handwoven Kente and traditional scarves.'},
+    bags: {title:'Bags & Purses', sub:'Everyday carry, makeup cases and mini luggage.'},
+    gifts: {title:'Gift Sets', sub:'Thoughtfully assembled — the ultimate expression of care.'},
+    home: {title:'Home & Lifestyle', sub:'Small comforts for the house.'},
+  };
+  const CATEGORY_HERO_IMAGES = {
+    skin: 'assets/hero-skin.jpg',
+    hair: 'assets/hero-hair.jpg',
+    african: 'assets/hero-african.jpg',
+    bags: 'assets/hero-bags.jpg',
+    gifts: 'assets/hero-gifts.jpg',
+    home: 'assets/hero-home.jpg',
+  };
+  let currentCategoryPage = null;
+
+  function buildComboKey(options){
+    if(!options) return '';
+    return Object.keys(options).sort().map(k => k+':'+options[k]).join('|');
+  }
+
+  function computeAvailability(p, key){
+    if(p.status === 'coming_soon') return {state:'coming_soon'};
+    if(p.status === 'out_of_stock') return {state:'out_of_stock'};
+    if(p.optionGroups && p.optionGroups.length){
+      const opts = selectedOptionChoice[key] || {};
+      const comboKey = buildComboKey(opts);
+      const qty = (p.comboStock && p.comboStock[comboKey] !== undefined) ? p.comboStock[comboKey] : null;
+      if(qty !== null && qty <= 0) return {state:'out_of_stock'};
+      return {state:'in_stock', qty};
+    } else {
+      const qty = (p.quantity !== undefined && p.quantity !== null) ? p.quantity : null;
+      if(qty !== null && qty <= 0) return {state:'out_of_stock'};
+      return {state:'in_stock', qty};
+    }
+  }
+
+  function updateAvailabilityUI(cat, i){
+    const p = PRODUCTS[cat][i];
+    const key = cat+'|'+i;
+    const avail = computeAvailability(p, key);
+    const btn = document.getElementById('btn-'+cat+'-'+i);
+    if(btn){
+      const disabled = avail.state !== 'in_stock';
+      btn.disabled = disabled;
+      btn.classList.toggle('disabled', disabled);
+      if(!btn.classList.contains('added')){
+        btn.textContent = avail.state==='coming_soon' ? 'Coming Soon' : avail.state==='out_of_stock' ? 'Out of Stock' : 'Secure Your Piece';
+      }
+    }
+    const badge = document.getElementById('badge-'+cat+'-'+i);
+    if(badge){
+      if(avail.state === 'coming_soon' || avail.state === 'out_of_stock'){
+        badge.style.display = 'inline-block';
+        badge.className = 'stock-badge ' + (avail.state === 'coming_soon' ? 'stock-soon' : 'stock-oos');
+        badge.textContent = avail.state === 'coming_soon' ? 'Coming Soon' : 'Out of Stock';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+    const low = document.getElementById('lowstock-'+cat+'-'+i);
+    if(low){
+      if(avail.state==='in_stock' && avail.qty !== null && avail.qty !== undefined && avail.qty <= 5){
+        low.style.display = 'inline';
+        low.textContent = 'Only '+avail.qty+' left';
+      } else {
+        low.style.display = 'none';
+      }
+    }
+  }
+
+  function productCardHtml(cat, i){
+    const p = PRODUCTS[cat][i];
+    const key = cat+'|'+i;
+    const hasVariants = p.variants && p.variants.length > 0;
+    const vIdx = selectedVariantIndex[key] || 0;
+    const cover = hasVariants ? p.variants[vIdx].image : ((p.images && p.images[0]) ? p.images[0] : null);
+    const imgHtml = cover
+      ? `<img id="cardimg-${cat}-${i}" src="${cover.replace(/"/g,'&quot;')}" alt="${p.n.replace(/"/g,'&quot;')}" class="card-img" onclick="openProductLightbox('${cat}',${i})">`
+      : `<div class="card-img-placeholder">${p.n.replace(/"/g,'&quot;')}</div>`;
+    const variantHtml = hasVariants ? `
+        <div class="variant-row" id="variants-${cat}-${i}">
+          ${p.variants.map((v,vi) => `<span class="variant-dot${vi===vIdx?' active':''}" title="${v.color.replace(/"/g,'&quot;')}" style="background-image:url('${v.image.replace(/'/g,"%27")}')" onclick="event.stopPropagation(); selectVariant('${cat}',${i},${vi},this)"></span>`).join('')}
+        </div>` : '';
+
+    const optionGroups = p.optionGroups || [];
+    if(optionGroups.length){
+      if(!selectedOptionChoice[key]) selectedOptionChoice[key] = {};
+      optionGroups.forEach(g => {
+        if(!selectedOptionChoice[key][g.name] && g.choices && g.choices.length){
+          selectedOptionChoice[key][g.name] = g.choices[0];
+        }
+      });
+    }
+    const optionsHtml = optionGroups.length ? optionGroups.map((g, gi) => {
+      const current = selectedOptionChoice[key] ? selectedOptionChoice[key][g.name] : null;
+      return `
+        <div class="option-block">
+          <div class="option-label">${g.name}</div>
+          <div class="option-pill-row" id="optgroup-${cat}-${i}-${gi}">
+            ${g.choices.map(c => `<span class="option-pill${c===current?' active':''}" onclick="event.stopPropagation(); selectOptionChoice('${cat}',${i},${gi},'${c.replace(/'/g,"\\'")}',this)">${c}</span>`).join('')}
+          </div>
+        </div>`;
+    }).join('') : '';
+
+    const avail = computeAvailability(p, key);
+    const badgeHtml = `<span id="badge-${cat}-${i}" class="stock-badge ${avail.state==='coming_soon'?'stock-soon':'stock-oos'}" style="display:${(avail.state==='coming_soon'||avail.state==='out_of_stock')?'inline-block':'none'}">${avail.state==='coming_soon'?'Coming Soon':'Out of Stock'}</span>`;
+    const lowStockHtml = `<span id="lowstock-${cat}-${i}" class="stock-low" style="display:${(avail.state==='in_stock' && avail.qty!==null && avail.qty!==undefined && avail.qty<=5)?'inline':'none'}">Only ${avail.qty!==null&&avail.qty!==undefined?avail.qty:''} left</span>`;
+    const btnDisabled = avail.state !== 'in_stock';
+    const btnLabel = avail.state === 'coming_soon' ? 'Coming Soon' : avail.state === 'out_of_stock' ? 'Out of Stock' : 'Secure Your Piece';
+
+    return `
+      <div class="card">
+        ${imgHtml}
+        <div class="card-body">
+          <h3>${p.n}${badgeHtml}</h3>
+          <div class="note">${p.note}</div>
+          ${variantHtml}
+          ${optionsHtml}
+          <div class="price-row">
+            <span class="price price-now">GHC ${p.price.toFixed(2)}</span>
+            <span class="price price-old">GHC ${p.old.toFixed(2)}</span>
+            ${lowStockHtml}
+          </div>
+          <button class="add-btn${btnDisabled?' disabled':''}" id="btn-${cat}-${i}" ${btnDisabled?'disabled':''} onclick="addToCart('${cat}',${i}, this)">${btnLabel}</button>
+        </div>
+      </div>`;
+  }
+
+  function selectVariant(cat, i, vIdx, el){
+    const key = cat+'|'+i;
+    selectedVariantIndex[key] = vIdx;
+    const p = PRODUCTS[cat][i];
+    const imgEl = document.getElementById('cardimg-'+cat+'-'+i);
+    if(imgEl && p.variants[vIdx]) imgEl.src = p.variants[vIdx].image;
+    const row = document.getElementById('variants-'+cat+'-'+i);
+    if(row){
+      row.querySelectorAll('.variant-dot').forEach(d => d.classList.remove('active'));
+      el.classList.add('active');
+    }
+    if(p.optionGroups && p.optionGroups.length){
+      const colourGroupIdx = p.optionGroups.findIndex(g => /^colou?r$/i.test(g.name));
+      if(colourGroupIdx > -1){
+        const vcolor = p.variants[vIdx].color || '';
+        const choiceMatch = p.optionGroups[colourGroupIdx].choices.find(c => c.toLowerCase() === vcolor.toLowerCase());
+        if(choiceMatch){
+          if(!selectedOptionChoice[key]) selectedOptionChoice[key] = {};
+          selectedOptionChoice[key][p.optionGroups[colourGroupIdx].name] = choiceMatch;
+          const orow = document.getElementById('optgroup-'+cat+'-'+i+'-'+colourGroupIdx);
+          if(orow){
+            orow.querySelectorAll('.option-pill').forEach(pl => pl.classList.toggle('active', pl.textContent === choiceMatch));
+          }
+        }
+      }
+    }
+    updateAvailabilityUI(cat, i);
+  }
+
+  function selectOptionChoice(cat, i, gi, choice, el){
+    const key = cat+'|'+i;
+    const p = PRODUCTS[cat][i];
+    const g = p.optionGroups[gi];
+    if(!g) return;
+    if(!selectedOptionChoice[key]) selectedOptionChoice[key] = {};
+    selectedOptionChoice[key][g.name] = choice;
+    const row = document.getElementById('optgroup-'+cat+'-'+i+'-'+gi);
+    if(row){
+      row.querySelectorAll('.option-pill').forEach(p2 => p2.classList.remove('active'));
+      el.classList.add('active');
+    }
+    if(/^colou?r$/i.test(g.name) && p.variants && p.variants.length){
+      const matchIdx = p.variants.findIndex(v => v.color && v.color.toLowerCase() === choice.toLowerCase());
+      if(matchIdx > -1){
+        selectedVariantIndex[key] = matchIdx;
+        const imgEl = document.getElementById('cardimg-'+cat+'-'+i);
+        if(imgEl) imgEl.src = p.variants[matchIdx].image;
+        const vrow = document.getElementById('variants-'+cat+'-'+i);
+        if(vrow){
+          vrow.querySelectorAll('.variant-dot').forEach((d,di) => d.classList.toggle('active', di===matchIdx));
+        }
+      }
+    }
+    updateAvailabilityUI(cat, i);
+  }
+
+  function itemOptionSummary(item){
+    const parts = [];
+    if(item.color) parts.push(item.color);
+    if(item.options){
+      Object.keys(item.options).forEach(k => { if(item.options[k]) parts.push(item.options[k]); });
+    }
+    return parts.join(', ');
+  }
+
+  function productCardsHtml(cat){
+    return PRODUCTS[cat].map((p,i) => ({p,i})).filter(o => !o.p.archived).map(o => productCardHtml(cat,o.i)).join('');
+  }
+
+  function renderDynamicCategories(){
+    const container = document.getElementById('dynamicCategories');
+    if(!container) return;
+    const fixedCats = Object.keys(DEFAULT_PRODUCTS);
+    const customCats = Object.keys(PRODUCTS).filter(cat => !fixedCats.includes(cat));
+    if(customCats.length === 0){ container.innerHTML = ''; return; }
+    container.innerHTML = customCats.map(cat => {
+      const label = customCategoryLabels[cat] || cat;
+      return `
+      <section class="cat" id="${cat}">
+        <div class="cat-head"><div class="moon p5"></div><h2>${label}</h2></div>
+        <p class="cat-sub">Newly added collection.</p>
+        <div class="grid" id="grid-${cat}"></div>
+      </section>`;
+    }).join('');
+    customCats.forEach(cat => {
+      const grid = document.getElementById('grid-'+cat);
+      if(grid) grid.innerHTML = productCardsHtml(cat);
+    });
+  }
+
+  function renderCatalogue(){
+    for(const cat in DEFAULT_PRODUCTS){
+      const grid = document.getElementById('grid-'+cat);
+      if(grid) grid.innerHTML = productCardsHtml(cat);
+    }
+    renderDynamicCategories();
+    const ritualP = PRODUCTS.skin && PRODUCTS.skin[0];
+    const ritualImgEl = document.getElementById('ritualImg');
+    if(ritualImgEl && ritualP && ritualP.images && ritualP.images[0]){
+      ritualImgEl.src = ritualP.images[0];
+      ritualImgEl.style.display = 'block';
+    }
+    if(ritualP){
+      const ritualBtn = document.querySelector('.rituals .add-btn');
+      if(ritualBtn){
+        const availR = computeAvailability(ritualP, 'skin|0');
+        ritualBtn.disabled = availR.state !== 'in_stock';
+        ritualBtn.classList.toggle('disabled', availR.state !== 'in_stock');
+        ritualBtn.textContent = availR.state==='coming_soon' ? 'Coming Soon' : availR.state==='out_of_stock' ? 'Out of Stock' : 'Elevate Your Ritual';
+      }
+    }
+    if(currentCategoryPage) renderCategoryPageGrid(currentCategoryPage);
+    fbq('track', 'ViewContent', {content_name:'MLuna Shop catalogue', content_type:'product_group'});
+    gtag('event', 'view_item_list', {item_list_name:'MLuna Shop catalogue'});
+  }
+
+  function showCategoryPage(cat, updateUrl){
+    if(updateUrl === undefined) updateUrl = true;
+    currentCategoryPage = cat;
+    const info = CATEGORY_PAGE_INFO[cat] || {title: (customCategoryLabels[cat] || cat), sub:''};
+    document.getElementById('categoryPageTitle').textContent = info.title;
+    document.getElementById('categoryPageSub').textContent = info.sub;
+    const heroUrl = CATEGORY_HERO_IMAGES[cat];
+    document.getElementById('categoryHero').style.backgroundImage = heroUrl ? `url('${heroUrl}')` : 'none';
+    renderCategoryPageGrid(cat);
+    showPage('category', false);
+    if(updateUrl) history.pushState({page:'category', cat:cat}, '', '#'+cat);
+  }
+  function renderCategoryPageGrid(cat){
+    const grid = document.getElementById('categoryPageGrid');
+    if(grid && PRODUCTS[cat]) grid.innerHTML = productCardsHtml(cat);
+  }
+
+  function openSearch(){
+    document.getElementById('searchOverlay').classList.add('open');
+    document.getElementById('searchInput').value = '';
+    document.getElementById('searchResults').innerHTML = '<p class="search-empty">Start typing to search all products.</p>';
+    setTimeout(()=> document.getElementById('searchInput').focus(), 50);
+  }
+  function closeSearch(){
+    document.getElementById('searchOverlay').classList.remove('open');
+  }
+  function renderSearchResults(query){
+    const el = document.getElementById('searchResults');
+    const q = query.trim().toLowerCase();
+    if(!q){ el.innerHTML = '<p class="search-empty">Start typing to search all products.</p>'; return; }
+    let html = '';
+    let count = 0;
+    for(const cat in PRODUCTS){
+      PRODUCTS[cat].forEach((p,i) => {
+        if(p.archived) return;
+        if(p.n.toLowerCase().includes(q) || (p.note||'').toLowerCase().includes(q)){
+          html += productCardHtml(cat, i);
+          count++;
+        }
+      });
+    }
+    el.innerHTML = count ? html : `<p class="search-empty">No products matching "${query}" — try a different word.</p>`;
+  }
+
+  let db = null;
+  function initFirebase(){
+    if(!window.firebase || !firebaseConfig || firebaseConfig.apiKey.includes('YOUR_')) return;
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    loadProductsFromFirestore();
+    loadReviewsFromFirestore();
+  }
+
+  function loadProductsFromFirestore(){
+    if(!db) return;
+    db.collection('products').orderBy('sortOrder').get().then(snap => {
+      const base = buildBaseProducts();
+      const starterOverrides = {};
+      const newItems = {}; for(const cat in base) newItems[cat] = [];
+      const newLabels = {};
+
+      snap.forEach(doc => {
+        const d = doc.data();
+        const images = Array.isArray(d.images) ? d.images : (d.image ? [d.image] : []);
+        const variants = Array.isArray(d.variants) ? d.variants : [];
+        const optionGroups = Array.isArray(d.optionGroups) ? d.optionGroups : [];
+        const status = d.status || 'in_stock';
+        const quantity = (d.quantity !== undefined && d.quantity !== null) ? Number(d.quantity) : null;
+        const comboStock = (d.comboStock && typeof d.comboStock === 'object') ? d.comboStock : {};
+        const entry = {n:d.n, note:d.note||'', price:Number(d.price), old:Number(d.old||d.price), images, variants, optionGroups, status, quantity, comboStock, archived: !!d.archived, docId:doc.id, starterKey:d.starterKey||null};
+        if(d.starterKey){
+          starterOverrides[d.starterKey] = entry;
+        } else {
+          if(!newItems[d.category]) newItems[d.category] = [];
+          newItems[d.category].push({...entry, isStarter:false});
+          if(d.categoryLabel) newLabels[d.category] = d.categoryLabel;
+        }
+      });
+
+      for(const cat in base){
+        base[cat] = base[cat].map(item => {
+          const ov = starterOverrides[item.starterKey];
+          return ov ? {...item, ...ov, isStarter:false} : item;
+        }).concat(newItems[cat] || []);
+      }
+      for(const cat in newItems){
+        if(!base[cat]) base[cat] = newItems[cat];
+      }
+      PRODUCTS = base;
+      customCategoryLabels = newLabels;
+      renderCatalogue();
+    }).catch(err => console.warn('Firestore load failed, using starter items:', err));
+  }
+
+  function addToCart(cat, i, btn){
+    const p = PRODUCTS[cat][i];
+    const key = cat+'|'+i;
+    const avail = computeAvailability(p, key);
+    if(avail.state !== 'in_stock'){
+      alert(avail.state === 'coming_soon' ? 'This item is coming soon and not yet available to order.' : 'Sorry, this item (or the selected option) is currently out of stock.');
+      return;
+    }
+    const hasVariants = p.variants && p.variants.length > 0;
+    const vIdx = selectedVariantIndex[key] || 0;
+    const color = hasVariants ? p.variants[vIdx].color : null;
+    const cover = hasVariants ? p.variants[vIdx].image : ((p.images && p.images[0]) ? p.images[0] : null);
+    const options = (p.optionGroups && p.optionGroups.length && selectedOptionChoice[key]) ? {...selectedOptionChoice[key]} : null;
+    const optionSuffix = options ? Object.keys(options).sort().map(k => k+':'+options[k]).join('|') : '';
+    const cartKey = key + (color ? ('|c:'+color) : '') + (optionSuffix ? ('|'+optionSuffix) : '');
+    if(!cart[cartKey]) cart[cartKey] = {n:p.n, price:p.price, image:cover, qty:0, color:color, options:options};
+    cart[cartKey].qty += 1;
+    renderCart();
+    const original = btn.textContent;
+    btn.textContent = "Added ✓";
+    btn.classList.add('added');
+    setTimeout(()=>{
+      btn.classList.remove('added');
+      updateAvailabilityUI(cat, i);
+    }, 1200);
+    openDrawer();
+    fbq('track', 'AddToCart', {content_name:p.n, content_category:cat, value:p.price, currency:'GHS'});
+    gtag('event', 'add_to_cart', {currency:'GHS', value:p.price, items:[{item_name:p.n, item_category:cat, price:p.price}]});
+  }
+
+  function changeQty(key, delta){
+    if(!cart[key]) return;
+    cart[key].qty += delta;
+    if(cart[key].qty <= 0) delete cart[key];
+    renderCart();
+  }
+
+  const DELIVERY_FEE = 35;
+
+  function renderCart(){
+    const items = Object.entries(cart);
+    const container = document.getElementById('drawerItems');
+    const countEl = document.getElementById('cartCount');
+    const subtotalEl = document.getElementById('subtotalAmt');
+    const deliveryEl = document.getElementById('deliveryAmt');
+    const totalEl = document.getElementById('totalAmt');
+    let subtotal = 0, count = 0;
+    if(items.length === 0){
+      container.innerHTML = '<p class="empty-note">No items yet — tap "Secure Your Piece" on anything you like.</p>';
+    } else {
+      container.innerHTML = items.map(([key, item]) => {
+        subtotal += item.price * item.qty;
+        count += item.qty;
+        const summary = itemOptionSummary(item);
+        return `
+        <div class="drawer-item">
+          ${item.image ? `<img src="${item.image}" alt="" class="drawer-item-img">` : '<div class="drawer-item-img drawer-item-noimg"></div>'}
+          <div class="drawer-item-info">
+            <span class="name">${item.n}${summary ? ' — '+summary : ''}</span>
+            <div class="qty-price">
+              <button class="qty-btn" onclick="changeQty('${key}',-1)">−</button>
+              <span>${item.qty}</span>
+              <button class="qty-btn" onclick="changeQty('${key}',1)">+</button>
+              <span class="price">GHC ${(item.price*item.qty).toFixed(2)}</span>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+    const delivery = items.length ? DELIVERY_FEE : 0;
+    countEl.textContent = count;
+    subtotalEl.textContent = 'GHC ' + subtotal.toFixed(2);
+    deliveryEl.textContent = 'GHC ' + delivery.toFixed(2);
+    totalEl.textContent = 'GHC ' + (subtotal + delivery).toFixed(2);
+  }
+
+  function openDrawer(){ document.getElementById('drawer').classList.add('open'); document.getElementById('overlay').classList.add('open'); }
+  function closeDrawer(){ document.getElementById('drawer').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
+
+  function getCustomerDetails(){
+    const name = document.getElementById('custName').value.trim();
+    const phone = document.getElementById('custPhone').value.trim();
+    const address = document.getElementById('custAddress').value.trim();
+    if(!name || !phone || !address){
+      alert('Please fill in your name, phone/WhatsApp number, and delivery address first.');
+      return null;
+    }
+    return {name, phone, address};
+  }
+
+  function saveOrderToFirestore(customer, items, subtotal, delivery, extra){
+    if(!db) return Promise.resolve(null);
+    return db.collection('orders').add({
+      customerName: customer.name,
+      phone: customer.phone,
+      address: customer.address,
+      items: items.map(it => ({name:it.n, qty:it.qty, price:it.price, image:it.image||null, color:it.color||null, options: it.options || null})),
+      subtotal, delivery, total: subtotal + delivery,
+      createdAt: Date.now(),
+      status: 'pending',
+      paymentStatus: 'unpaid',
+      paymentMethod: null,
+      ...extra
+    }).then(ref => ref.id).catch(err => { console.warn('Order save failed (non-blocking):', err); return null; });
+  }
+
+  function sendWhatsApp(){
+    const items = Object.values(cart);
+    if(items.length === 0){ alert('Add at least one item first.'); return; }
+    const customer = getCustomerDetails();
+    if(!customer) return;
+    const subtotal = items.reduce((s,it)=> s + it.price*it.qty, 0);
+    const total = subtotal + DELIVERY_FEE;
+    let msg = `Hello MLuna Shop! I'd like to order:\n\n`;
+    items.forEach(it => {
+      const summary = itemOptionSummary(it);
+      msg += `• ${it.n}${summary ? ' ('+summary+')' : ''} x${it.qty} — GHC ${(it.price*it.qty).toFixed(2)}\n`;
+    });
+    msg += `\nSubtotal: GHC ${subtotal.toFixed(2)}\nDelivery: GHC ${DELIVERY_FEE.toFixed(2)}\nTotal: GHC ${total.toFixed(2)}\n\n`;
+    msg += `Name: ${customer.name}\nPhone: ${customer.phone}\nDelivery Location: ${customer.address}\n\nWe deliver nationwide — estimated delivery is 3–5 working days. Please confirm availability, exact delivery cost for my location, and timing.`;
+    window.open('https://wa.me/233207657029?text=' + encodeURIComponent(msg), '_blank');
+    saveOrderToFirestore(customer, items, subtotal, DELIVERY_FEE, {channel:'whatsapp'});
+    fbq('track', 'InitiateCheckout', {value:total, currency:'GHS', num_items:items.length});
+    fbq('track', 'Contact');
+    gtag('event', 'begin_checkout', {currency:'GHS', value:total});
+  }
+
+  function payNow(){
+    const items = Object.values(cart);
+    if(items.length === 0){ alert('Add at least one item first.'); return; }
+    const customer = getCustomerDetails();
+    if(!customer) return;
+    const subtotal = items.reduce((s,it)=> s + it.price*it.qty, 0);
+    const total = subtotal + DELIVERY_FEE;
+    const email = prompt("Enter your email for the Paystack receipt:");
+    if(!email) return;
+    fbq('track', 'InitiateCheckout', {value:total, currency:'GHS', num_items:items.length});
+    gtag('event', 'begin_checkout', {currency:'GHS', value:total});
+
+    saveOrderToFirestore(customer, items, subtotal, DELIVERY_FEE, {channel:'paystack', email}).then(orderId => {
+      if(!orderId){ alert('Could not start order. Please try again or use WhatsApp.'); return; }
+
+      PaystackPop.setup({
+        key: 'pk_live_9136ecd40ccc704b3e337e4168138f97186bff96',
+        email: email,
+        amount: Math.round(total * 100),
+        currency: 'GHS',
+        callback: function(response){
+          fetch('/api/verify-payment', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ reference: response.reference, orderId: orderId })
+          })
+          .then(r => r.json())
+          .then(result => {
+            if(result.verified){
+              fbq('track', 'Purchase', {value:total, currency:'GHS'});
+              gtag('event', 'purchase', {transaction_id:response.reference, currency:'GHS', value:total});
+              alert('Payment confirmed! Reference: ' + response.reference + '\nYour order is now confirmed.');
+            } else {
+              alert('We could not confirm your payment yet. If money left your account, please contact us on WhatsApp with reference ' + response.reference + ' and we will check manually.');
+            }
+          })
+          .catch(()=> alert('Payment was made but we could not confirm it automatically. Please contact us on WhatsApp with reference ' + response.reference + '.'));
+        },
+        onClose: function(){
+          alert('Payment was cancelled. Your order was saved as unpaid — you can retry payment or send it via WhatsApp instead.');
+        }
+      }).openIframe();
+    });
+  }
+
+  function openLogoLightbox(){ document.getElementById('logoLightbox').classList.add('open'); }
+  function closeLogoLightbox(){ document.getElementById('logoLightbox').classList.remove('open'); }
+
+  function showPage(name, updateUrl){
+    if(updateUrl === undefined) updateUrl = true;
+    document.getElementById('page-shop').classList.toggle('active', name==='shop');
+    document.getElementById('page-wholesale').classList.toggle('active', name==='wholesale');
+    document.getElementById('page-category').classList.toggle('active', name==='category');
+    window.scrollTo({top:0, behavior:'smooth'});
+    if(updateUrl && name !== 'category'){
+      const hash = name === 'shop' ? '' : name;
+      history.pushState({page:name}, '', hash ? '#'+hash : location.pathname + location.search);
+    }
+  }
+  function scrollToRituals(){
+    showPage('shop');
+    setTimeout(()=> document.getElementById('rituals').scrollIntoView({behavior:'smooth'}), 60);
+  }
+  function handleRoute(){
+    const hash = location.hash.replace('#','');
+    if(!hash || hash === 'shop'){ showPage('shop', false); }
+    else if(hash === 'wholesale'){ showPage('wholesale', false); }
+    else if(PRODUCTS[hash]){ showCategoryPage(hash, false); }
+    else { showPage('shop', false); }
+  }
+  window.addEventListener('popstate', handleRoute);
+
+  function saveLeadToFirestore(data){
+    if(!db) return;
+    db.collection('leads').add({...data, createdAt: Date.now()})
+      .catch(err => console.warn('Lead save failed (non-blocking):', err));
+  }
+
+  function submitNewsletter(e){
+    e.preventDefault();
+    const email = document.getElementById('newsEmail').value;
+    const msg = `New newsletter signup for MLuna Shop\n\nEmail: ${email}`;
+    window.open('https://wa.me/233207657029?text=' + encodeURIComponent(msg), '_blank');
+    const mailBody = encodeURIComponent(`New subscriber email: ${email}`);
+    window.open(`mailto:mawuenaagbogah0@gmail.com?subject=New%20Newsletter%20Signup&body=${mailBody}`, '_blank');
+    saveLeadToFirestore({source:'newsletter', email});
+    alert("Thanks for joining! We've prepared a WhatsApp and email notification — please tap send in each.");
+    document.getElementById('newsEmail').value = '';
+    fbq('track', 'Lead', {content_name:'Newsletter signup'});
+    gtag('event', 'generate_lead', {lead_type:'newsletter'});
+    return false;
+  }
+
+  function submitWholesale(e){
+    e.preventDefault();
+    const name = document.getElementById('wsName').value;
+    const phone = document.getElementById('wsPhone').value;
+    const email = document.getElementById('wsEmail').value;
+    const business = document.getElementById('wsBusiness').value;
+    const type = document.getElementById('wsType').value;
+    const products = document.getElementById('wsProducts').value;
+    const notes = document.getElementById('wsNotes').value;
+
+    let msg = `Wholesale / Pre-Order Inquiry — MLuna Shop\n\n`;
+    msg += `Name: ${name}\nPhone: ${phone}\nEmail: ${email}\n`;
+    if(business) msg += `Business: ${business}\n`;
+    msg += `Inquiry Type: ${type}\n`;
+    if(products) msg += `\nProducts of interest:\n${products}\n`;
+    if(notes) msg += `\nNotes:\n${notes}\n`;
+
+    window.open('https://wa.me/233207657029?text=' + encodeURIComponent(msg), '_blank');
+
+    const mailSubject = encodeURIComponent('Wholesale / Pre-Order Inquiry — ' + name);
+    const mailBody = encodeURIComponent(msg);
+    window.open(`mailto:mawuenaagbogah0@gmail.com?subject=${mailSubject}&body=${mailBody}`, '_blank');
+
+    saveLeadToFirestore({source:'wholesale', name, phone, email, business, inquiryType:type, products, notes});
+    alert("Thank you! Your inquiry has been prepared for WhatsApp and email — please tap send in each to reach MLuna Shop.");
+    document.getElementById('wholesaleForm').reset();
+    fbq('track', 'Lead', {content_name:'Wholesale inquiry', content_category:type});
+    gtag('event', 'generate_lead', {lead_type:'wholesale'});
+    return false;
+  }
+
+  let currentLightboxImages = [];
+  let currentLightboxIndex = 0;
+  let currentLightboxName = 'mluna-shop-product';
+
+  function openProductLightbox(cat, i){
+    const p = PRODUCTS[cat][i];
+    currentLightboxImages = (p.images && p.images.length) ? p.images : [];
+    if(currentLightboxImages.length === 0) return;
+    currentLightboxIndex = 0;
+    currentLightboxName = (p.n || 'mluna-shop-product').toLowerCase().replace(/[^a-z0-9]+/g,'-');
+    document.getElementById('productLightboxTitle').textContent = p.n + (currentLightboxImages.length > 1 ? ` — photo 1 of ${currentLightboxImages.length}` : '');
+    renderLightboxDots();
+    showLightboxImage();
+    document.getElementById('productLightbox').classList.add('open');
+  }
+  function renderLightboxDots(){
+    const dotsEl = document.getElementById('productLightboxDots');
+    const arrows = document.querySelectorAll('.lightbox-arrow');
+    if(currentLightboxImages.length <= 1){
+      dotsEl.innerHTML = '';
+      arrows.forEach(a => a.style.display = 'none');
+      return;
+    }
+    arrows.forEach(a => a.style.display = '');
+    dotsEl.innerHTML = currentLightboxImages.map((_,idx) =>
+      `<span class="${idx===currentLightboxIndex?'active':''}" onclick="lightboxGoTo(${idx})"></span>`
+    ).join('');
+  }
+  function showLightboxImage(){
+    document.getElementById('productLightboxImg').src = currentLightboxImages[currentLightboxIndex];
+    const title = document.getElementById('productLightboxTitle');
+    const baseTitle = title.textContent.split(' — photo')[0];
+    title.textContent = baseTitle + (currentLightboxImages.length > 1 ? ` — photo ${currentLightboxIndex+1} of ${currentLightboxImages.length}` : '');
+    renderLightboxDots();
+  }
+  function lightboxNext(){ currentLightboxIndex = (currentLightboxIndex + 1) % currentLightboxImages.length; showLightboxImage(); }
+  function lightboxPrev(){ currentLightboxIndex = (currentLightboxIndex - 1 + currentLightboxImages.length) % currentLightboxImages.length; showLightboxImage(); }
+  function lightboxGoTo(idx){ currentLightboxIndex = idx; showLightboxImage(); }
+  function closeProductLightbox(){
+    document.getElementById('productLightbox').classList.remove('open');
+  }
+  async function downloadProductImage(){
+    const url = currentLightboxImages[currentLightboxIndex];
+    if(!url) return;
+    try{
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = currentLightboxName + '-' + (currentLightboxIndex+1) + '.jpg';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(blobUrl);
+    }catch(err){
+      window.open(url, '_blank');
+    }
+  }
+
+  const SITE_URL = 'https://mluna-shop.vercel.app/';
+  function initQrCode(){
+    const el = document.getElementById('qrImg');
+    if(!el) return;
+    el.src = 'https://api.qrserver.com/v1/create-qr-code/?size=360x360&margin=8&data=' + encodeURIComponent(SITE_URL);
+  }
+  async function downloadQrCode(){
+    try{
+      const res = await fetch(document.getElementById('qrImg').src);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = 'mluna-shop-qr-code.png';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(blobUrl);
+    }catch(err){
+      window.open(document.getElementById('qrImg').src, '_blank');
+    }
+  }
+
+  let selectedStarRating = 0;
+  function setupStarPicker(){
+    const picker = document.getElementById('starPicker');
+    if(!picker) return;
+    picker.querySelectorAll('span').forEach(star => {
+      star.onclick = () => {
+        selectedStarRating = Number(star.dataset.v);
+        picker.querySelectorAll('span').forEach(s => s.classList.toggle('active', Number(s.dataset.v) <= selectedStarRating));
+      };
+    });
+  }
+  function toggleReviewForm(){
+    const form = document.getElementById('reviewForm');
+    const isOpen = form.style.display !== 'none';
+    form.style.display = isOpen ? 'none' : 'block';
+    document.getElementById('reviewFormToggle').textContent = isOpen ? 'Write a Review' : 'Cancel';
+    if(!isOpen) populateReviewProductSelect();
+  }
+  function populateReviewProductSelect(){
+    const sel = document.getElementById('revProduct');
+    if(!sel || sel.options.length > 1) return;
+    for(const cat in PRODUCTS){
+      PRODUCTS[cat].forEach(p => {
+        if(p.archived) return;
+        const opt = document.createElement('option');
+        opt.value = p.n;
+        opt.textContent = p.n;
+        sel.appendChild(opt);
+      });
+    }
+  }
+  function submitReview(e){
+    e.preventDefault();
+    const name = document.getElementById('revName').value.trim();
+    const comment = document.getElementById('revComment').value.trim();
+    const product = document.getElementById('revProduct').value;
+    if(!name || !comment || selectedStarRating === 0){
+      alert('Please add your name, a star rating, and a short review.');
+      return false;
+    }
+    if(!db){ alert('Reviews aren\'t connected yet.'); return false; }
+    db.collection('reviews').add({
+      name, rating: selectedStarRating, comment, product: product || null,
+      status: 'pending', featured: false, createdAt: Date.now()
+    }).then(()=>{
+      alert('Thank you! Your review has been submitted and will appear once approved.');
+      document.getElementById('reviewForm').reset();
+      selectedStarRating = 0;
+      document.querySelectorAll('#starPicker span').forEach(s => s.classList.remove('active'));
+      toggleReviewForm();
+    }).catch(err => alert('Could not submit review: ' + err.message));
+    return false;
+  }
+  let REVIEWS = [];
+  function loadReviewsFromFirestore(){
+    if(!db) return;
+    db.collection('reviews').where('status','==','approved').limit(50)
+      .onSnapshot(snap => {
+        REVIEWS = snap.docs.map(d => d.data()).sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+        renderReviewsSection();
+      }, err => console.warn('Reviews load failed:', err));
+  }
+  function renderReviewsSection(){
+    const listEl = document.getElementById('reviewsList');
+    const avgEl = document.getElementById('reviewsAvg');
+    if(!listEl) return;
+    if(REVIEWS.length === 0){
+      listEl.innerHTML = '<p class="reviews-empty">Be the first to leave a review.</p>';
+      avgEl.textContent = 'No reviews yet';
+      return;
+    }
+    const avg = (REVIEWS.reduce((s,r)=> s + r.rating, 0) / REVIEWS.length).toFixed(1);
+    avgEl.innerHTML = `<span class="stars">${'★'.repeat(Math.round(avg))}${'☆'.repeat(5-Math.round(avg))}</span> ${avg} (${REVIEWS.length} review${REVIEWS.length===1?'':'s'})`;
+    const sorted = [...REVIEWS].sort((a,b) => (b.featured?1:0) - (a.featured?1:0) || b.createdAt - a.createdAt);
+    listEl.innerHTML = sorted.slice(0,8).map(r => `
+      <div class="review-card${r.featured?' featured':''}">
+        ${r.featured ? '<span class="featured-tag">Featured</span>' : ''}
+        <div class="stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
+        <p class="comment">"${r.comment.replace(/</g,'&lt;')}"</p>
+        <div class="meta">— ${r.name.replace(/</g,'&lt;')}${r.product ? ', on '+r.product.replace(/</g,'&lt;') : ''}</div>
+      </div>`).join('');
+  }
+
+  renderCatalogue();
+  initFirebase();
+  initQrCode();
+  handleRoute();
+  setupStarPicker();
+</script>
+
+</body>
+</html>
