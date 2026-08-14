@@ -260,7 +260,7 @@
   .option-label{ font-size:0.64rem; text-transform:uppercase; letter-spacing:0.05em; color:rgba(23,20,18,0.55); margin-bottom:3px; }
   .option-pill-row{ display:flex; gap:5px; flex-wrap:wrap; margin-bottom:2px; }
   .option-pill{ font-size:0.66rem; padding:4px 9px; border:1px solid var(--line); border-radius:100px; background:#fff; color:var(--forest); cursor:pointer; white-space:nowrap; }
-  .option-pill.active{ background:var(--forest); color:var(--cream); border-color:var(--forest); }
+  .option-select{ font-size:0.76rem; padding:8px 10px; width:auto; max-width:100%; border-radius:100px; }
 
   .stock-badge{ font-size:0.6rem; text-transform:uppercase; letter-spacing:0.05em; font-weight:700; padding:3px 8px; border-radius:100px; display:none; margin-left:6px; vertical-align:middle; }
   .stock-oos{ background:#e4d3c8; color:#7a3b2a; }
@@ -1004,6 +1004,15 @@
     }
     const optionsHtml = optionGroups.length ? optionGroups.map((g, gi) => {
       const current = selectedOptionChoice[key] ? selectedOptionChoice[key][g.name] : null;
+      if(g.choices.length > 8){
+        return `
+        <div class="option-block">
+          <div class="option-label">${g.name}</div>
+          <select class="option-select" id="optgroup-${cat}-${i}-${gi}" onchange="event.stopPropagation(); selectOptionChoice('${cat}',${i},${gi}, this.value, this)">
+            ${g.choices.map(c => `<option value="${c.replace(/"/g,'&quot;')}"${c===current?' selected':''}>${c}</option>`).join('')}
+          </select>
+        </div>`;
+      }
       return `
         <div class="option-block">
           <div class="option-label">${g.name}</div>
@@ -1056,8 +1065,8 @@
         if(choiceMatch){
           if(!selectedOptionChoice[key]) selectedOptionChoice[key] = {};
           selectedOptionChoice[key][p.optionGroups[colourGroupIdx].name] = choiceMatch;
-          const orow = document.getElementById('optgroup-'+cat+'-'+i+'-'+colourGroupIdx);
-          if(orow){
+          const row = document.getElementById('optgroup-'+cat+'-'+i+'-'+gi);
+    if(row && el && el.tagName !== 'SELECT'){
             orow.querySelectorAll('.option-pill').forEach(pl => pl.classList.toggle('active', pl.textContent === choiceMatch));
           }
         }
