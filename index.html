@@ -1163,8 +1163,9 @@
     gtag('event', 'view_item_list', {item_list_name:'MLuna Shop catalogue'});
   }
 
-  function showCategoryPage(cat, updateUrl){
+  function showCategoryPage(cat, updateUrl, skipScrollTop){
     if(updateUrl === undefined) updateUrl = true;
+    currentPageName = 'category';
     currentCategoryPage = cat;
     const info = CATEGORY_PAGE_INFO[cat] || {title: (customCategoryLabels[cat] || cat), sub:''};
     document.getElementById('categoryPageTitle').textContent = info.title;
@@ -1172,7 +1173,7 @@
     const heroUrl = CATEGORY_HERO_IMAGES[cat];
     document.getElementById('categoryHero').style.backgroundImage = heroUrl ? `url('${heroUrl}')` : 'none';
     renderCategoryPageGrid(cat);
-    showPage('category', false);
+    showPage('category', false, skipScrollTop);
     if(updateUrl) history.pushState({page:'category', cat:cat}, '', '#'+cat);
   }
   function renderCategoryPageGrid(cat){
@@ -1432,12 +1433,14 @@
   function openLogoLightbox(){ document.getElementById('logoLightbox').classList.add('open'); }
   function closeLogoLightbox(){ document.getElementById('logoLightbox').classList.remove('open'); }
 
-  function showPage(name, updateUrl){
+  let currentPageName = 'shop';
+  function showPage(name, updateUrl, skipScrollTop){
     if(updateUrl === undefined) updateUrl = true;
+    currentPageName = name;
     document.getElementById('page-shop').classList.toggle('active', name==='shop');
     document.getElementById('page-wholesale').classList.toggle('active', name==='wholesale');
     document.getElementById('page-category').classList.toggle('active', name==='category');
-    window.scrollTo({top:0, behavior:'smooth'});
+    if(!skipScrollTop) window.scrollTo({top:0, behavior:'smooth'});
     if(updateUrl && name !== 'category'){
       const hash = name === 'shop' ? '' : name;
       history.pushState({page:name}, '', hash ? '#'+hash : location.pathname + location.search);
@@ -1674,10 +1677,50 @@
       </div>`).join('');
   }
 
+  function saveSiteState(){
+    try{
+      sessionStorage.setItem('mlunaSiteState', JSON.stringify({
+        page: currentPageName,
+        cat: currentCategoryPage,
+        scrollY: window.scrollY
+      }));
+    }catch(e){}
+  }
+  window.addEventListener('pagehide', saveSiteState);
+  document.addEventListener('visibilitychange', () => { if(document.hidden) saveSiteState(); });
+  let _scrollSaveTimer = null;
+  window.addEventListener('scroll', () => {
+    clearTimeout(_scrollSaveTimer);
+    _scrollSaveTimer = setTimeout(saveSiteState, 400);
+  });
+
+  function restoreSiteState(){
+    let saved = null;
+    try{ saved = JSON.parse(sessionStorage.getItem('mlunaSiteState') || 'null'); }catch(e){}
+    if(!saved) return false;
+    if(saved.page === 'category' && saved.cat && PRODUCTS[saved.cat]){
+      showCategoryPage(saved.cat, false, true);
+    } else if(saved.page === 'wholesale'){
+      showPage('wholesale', false, true);
+    } else {
+      showPage('shop', false, true);
+    }
+    if(saved.scrollY){
+      setTimeout(()=> window.scrollTo(0, saved.scrollY), 60);
+    }
+    return true;
+  }
+
+  function initialRoute(){
+    if(location.hash){ handleRoute(); return; }
+    if(restoreSiteState()) return;
+    handleRoute();
+  }
+
   renderCatalogue();
   initFirebase();
   initQrCode();
-  handleRoute();
+  initialRoute();
   setupStarPicker();
 </script>
 
