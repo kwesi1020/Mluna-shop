@@ -52,6 +52,7 @@
   .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
   .form-grid .full{ grid-column:1 / -1; }
   .submit-btn{ background:var(--gold); color:var(--cream); border:none; padding:15px 30px; border-radius:100px; font-weight:700; font-size:0.92rem; cursor:pointer; }
+  .submit-btn:disabled{ opacity:0.5; cursor:not-allowed; }
   .btn-ghost{ border:1px solid var(--forest); color:var(--forest); background:transparent; padding:14px 24px; border-radius:100px; font-weight:600; font-size:0.85rem; text-decoration:none; cursor:pointer; }
 
   #loginBox { max-width:360px; }
@@ -182,6 +183,14 @@
   .profit-table tr:hover td{ background:rgba(167,138,107,0.06); }
   .profit-low-stock{ color:#7a3b2a; font-weight:700; }
 
+  .pricestatus-badge{ font-size:0.62rem; text-transform:uppercase; letter-spacing:0.05em; font-weight:700; padding:3px 8px; border-radius:100px; display:inline-block; margin-left:6px; vertical-align:middle; }
+  .pricestatus-priced{ background:var(--gold); color:var(--cream); }
+  .pricestatus-retail_only{ background:#f0e3c0; color:#7a5c00; }
+  .pricestatus-pending{ background:#e4d3c8; color:#7a3b2a; }
+  .sku-tag{ font-family:'Space Mono', monospace; font-size:0.68rem; color:rgba(23,20,18,0.5); margin-left:6px; }
+  .import-result-box{ border:1px solid var(--line); border-radius:var(--radius); background:#fff; padding:16px; margin-top:14px; font-size:0.82rem; line-height:1.7; }
+  .import-result-box strong{ display:block; margin-bottom:6px; }
+
   @media (max-width: 640px){ .form-grid{ grid-template-columns:1fr; } }
 </style>
 </head>
@@ -197,7 +206,7 @@
     <a class="back-link" href="index.html">← Back to Retail Shop</a>
     <div class="eyebrow"><div class="moon p5"></div> Private — not linked from the main store nav</div>
     <h1>Manage MLuna Shop</h1>
-    <p>See your real sales performance, edit any of the 28 starter items to add a real photo and make it live, or add brand-new products — including custom categories, colour/size/yard/flavour options, stock tracking, reviews, and printable invoices. Changes appear on the store immediately.</p>
+    <p>See your real sales performance, edit any of the 28 starter items to add a real photo and make it live, or add brand-new products — including custom categories, colour/size/yard/flavour options, stock tracking, SKUs, suppliers, purchase orders, reviews, and printable invoices. Changes appear on the store immediately.</p>
   </div>
 </div>
 
@@ -313,6 +322,13 @@
       <p style="font-size:0.74rem; color:rgba(23,20,18,0.45); margin-top:14px;">Cost = current Cost Price × units sold in the period (doesn't track historical cost changes). * = no Cost Price set yet, so cost shows as 0 for that row. Refunds aren't tracked in the order system yet, so only Cancelled orders are excluded.</p>
     </div>
 
+    <div style="margin-bottom:56px; padding-bottom:32px; border-top:1px solid var(--line); padding-top:32px;">
+      <h2 style="margin-bottom:6px;">Workbook Import</h2>
+      <p style="font-size:0.85rem; color:rgba(23,20,18,0.6); margin-bottom:18px;">Controlled, one-time test import from the Mluna Enterprise workbook audit. Only the 5 Commander-approved Neutriherbs SKUs can be imported here — nothing else. Running this twice will not create duplicates.</p>
+      <button id="importBatchBtn" class="submit-btn" onclick="importApprovedTestBatch()">Import Approved Test Batch (5 Neutriherbs SKUs)</button>
+      <div id="importResultBox" class="import-result-box" style="display:none;"></div>
+    </div>
+
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
       <h2 style="margin:0;">Products</h2>
       <button onclick="adminLogout()" class="btn-ghost" style="padding:9px 18px; font-size:0.8rem;">Sign Out</button>
@@ -347,6 +363,18 @@
           <input type="text" id="pfNote">
         </div>
         <div>
+          <label>SKU (optional)</label>
+          <input type="text" id="pfSku" placeholder="e.g. ML-MSK-001">
+        </div>
+        <div>
+          <label>Price Status</label>
+          <select id="pfPriceStatus">
+            <option value="priced">Priced (fully costed, sellable)</option>
+            <option value="retail_only">Retail Only (cost not yet known)</option>
+            <option value="pending">Pending (not ready to sell)</option>
+          </select>
+        </div>
+        <div>
           <label>Price (GHC)</label>
           <input type="number" step="0.01" id="pfPrice" required>
         </div>
@@ -359,6 +387,20 @@
           <input type="number" step="0.01" id="pfCost" placeholder="0.00">
         </div>
         <div>
+          <label>Wholesale Price (GHC, optional)</label>
+          <input type="number" step="0.01" id="pfWholesale" placeholder="0.00">
+        </div>
+        <div>
+          <label>Landed Cost (GHC, optional — cost + freight)</label>
+          <input type="number" step="0.01" id="pfLandedCost" placeholder="Leave blank if same as Cost Price">
+        </div>
+        <div>
+          <label>Supplier</label>
+          <select id="pfSupplier">
+            <option value="">No supplier linked</option>
+          </select>
+        </div>
+        <div>
           <label>Status</label>
           <select id="pfStatus">
             <option value="in_stock">In Stock</option>
@@ -369,6 +411,14 @@
         <div>
           <label>Quantity (only used if this product has NO options below)</label>
           <input type="number" min="0" step="1" id="pfQuantity" placeholder="Leave blank = always in stock">
+        </div>
+        <div>
+          <label>Reorder Level (optional)</label>
+          <input type="number" min="0" step="1" id="pfReorderLevel" placeholder="Default: 5">
+        </div>
+        <div>
+          <label>Incoming Stock (optional — from open purchase orders, not yet physically available)</label>
+          <input type="number" min="0" step="1" id="pfIncomingStock" placeholder="0">
         </div>
         <div class="full">
           <label>Product Photos (you can select several at once)</label>
@@ -400,6 +450,18 @@
     </form>
 
     <div id="adminProductList"></div>
+
+    <div style="margin-top:56px; padding-top:32px; border-top:1px solid var(--line);">
+      <h2 style="margin-bottom:6px;">Suppliers</h2>
+      <p style="font-size:0.85rem; color:rgba(23,20,18,0.6); margin-bottom:18px;">Suppliers linked to your products and purchase orders. "Supplier TBD" entries are unverified placeholders, not real contacts.</p>
+      <div id="suppliersList"></div>
+    </div>
+
+    <div style="margin-top:56px; padding-top:32px; border-top:1px solid var(--line);">
+      <h2 style="margin-bottom:6px;">Purchase Orders</h2>
+      <p style="font-size:0.85rem; color:rgba(23,20,18,0.6); margin-bottom:18px;">Orders placed with suppliers. Orders marked "Excluded from MLuna inventory" never affect your stock, cost, or profitability numbers.</p>
+      <div id="purchaseOrdersList"></div>
+    </div>
 
     <div style="margin-top:56px; padding-top:32px; border-top:1px solid var(--line);">
       <h2 style="margin-bottom:6px;">Customers to Reach Out To</h2>
@@ -643,7 +705,8 @@
     const base = {};
     for(const cat in DEFAULT_PRODUCTS){
       base[cat] = DEFAULT_PRODUCTS[cat].map((p,i) => ({
-        ...p, images:[], variants:[], optionGroups:[], status:'in_stock', quantity:null, comboStock:{}, archived:false, starterKey:cat+'-'+i, docId:null, isStarter:true, costPrice:0
+        ...p, images:[], variants:[], optionGroups:[], status:'in_stock', quantity:null, comboStock:{}, archived:false, starterKey:cat+'-'+i, docId:null, isStarter:true,
+        costPrice:0, sku:null, wholesalePrice:null, landedCost:null, incomingStock:0, reorderLevel:5, supplierRef:null, priceStatus:null, importedFromWorkbook:false, importBatchId:null
       }));
     }
     return base;
@@ -664,6 +727,8 @@
         loadOrdersFromFirestore();
         loadReviewsAdmin();
         loadDebtorsFromFirestore();
+        loadSuppliers();
+        loadPurchaseOrders();
         setAnalyticsRange('month');
         setProfitRange('month');
       }
@@ -703,7 +768,16 @@
         const quantity = (d.quantity !== undefined && d.quantity !== null) ? Number(d.quantity) : null;
         const comboStock = (d.comboStock && typeof d.comboStock === 'object') ? d.comboStock : {};
         const costPrice = Number(d.costPrice || 0);
-        const entry = {n:d.n, note:d.note||'', price:Number(d.price), old:Number(d.old||d.price), images, variants, optionGroups, status, quantity, comboStock, archived: !!d.archived, docId:doc.id, starterKey:d.starterKey||null, costPrice};
+        const sku = d.sku || null;
+        const wholesalePrice = (d.wholesalePrice !== undefined && d.wholesalePrice !== null) ? Number(d.wholesalePrice) : null;
+        const landedCost = (d.landedCost !== undefined && d.landedCost !== null) ? Number(d.landedCost) : null;
+        const incomingStock = Number(d.incomingStock || 0);
+        const reorderLevel = (d.reorderLevel !== undefined && d.reorderLevel !== null) ? Number(d.reorderLevel) : 5;
+        const supplierRef = d.supplierRef || null;
+        const priceStatus = d.priceStatus || null;
+        const importedFromWorkbook = !!d.importedFromWorkbook;
+        const importBatchId = d.importBatchId || null;
+        const entry = {n:d.n, note:d.note||'', price:Number(d.price), old:Number(d.old||d.price), images, variants, optionGroups, status, quantity, comboStock, archived: !!d.archived, docId:doc.id, starterKey:d.starterKey||null, costPrice, sku, wholesalePrice, landedCost, incomingStock, reorderLevel, supplierRef, priceStatus, importedFromWorkbook, importBatchId};
         if(d.starterKey){
           starterOverrides[d.starterKey] = entry;
         } else {
@@ -852,11 +926,18 @@
     document.getElementById('pfNewCategory').value = '';
     document.getElementById('pfName').value = '';
     document.getElementById('pfNote').value = '';
+    document.getElementById('pfSku').value = '';
+    document.getElementById('pfPriceStatus').value = 'priced';
     document.getElementById('pfPrice').value = '';
     document.getElementById('pfOld').value = '';
     document.getElementById('pfCost').value = '';
+    document.getElementById('pfWholesale').value = '';
+    document.getElementById('pfLandedCost').value = '';
+    document.getElementById('pfSupplier').value = '';
     document.getElementById('pfStatus').value = 'in_stock';
     document.getElementById('pfQuantity').value = '';
+    document.getElementById('pfReorderLevel').value = '';
+    document.getElementById('pfIncomingStock').value = '';
     document.getElementById('pfImage').value = '';
     document.getElementById('pfPhotoPreviews').innerHTML = '';
     document.getElementById('currentPhotoBox').style.display = 'none';
@@ -928,6 +1009,12 @@
 
       const qtyRaw = document.getElementById('pfQuantity').value;
       const quantity = qtyRaw === '' ? null : Math.max(0, Number(qtyRaw));
+      const wholesaleRaw = document.getElementById('pfWholesale').value;
+      const landedRaw = document.getElementById('pfLandedCost').value;
+      const reorderRaw = document.getElementById('pfReorderLevel').value;
+      const incomingRaw = document.getElementById('pfIncomingStock').value;
+      const skuRaw = document.getElementById('pfSku').value.trim();
+      const supplierRaw = document.getElementById('pfSupplier').value;
 
       btn.textContent = 'Saving...';
       const data = {
@@ -937,6 +1024,13 @@
         price: Number(document.getElementById('pfPrice').value),
         old: Number(document.getElementById('pfOld').value) || Number(document.getElementById('pfPrice').value),
         costPrice: Number(document.getElementById('pfCost').value) || 0,
+        sku: skuRaw || null,
+        priceStatus: document.getElementById('pfPriceStatus').value,
+        wholesalePrice: wholesaleRaw === '' ? null : Number(wholesaleRaw),
+        landedCost: landedRaw === '' ? null : Number(landedRaw),
+        reorderLevel: reorderRaw === '' ? 5 : Number(reorderRaw),
+        incomingStock: incomingRaw === '' ? 0 : Number(incomingRaw),
+        supplierRef: supplierRaw || null,
         images: images,
         variants: variants,
         optionGroups: optionGroups,
@@ -975,11 +1069,18 @@
     document.getElementById('pfPhotoPreviews').innerHTML = '';
     document.getElementById('pfName').value = p.n;
     document.getElementById('pfNote').value = p.note;
+    document.getElementById('pfSku').value = p.sku || '';
+    document.getElementById('pfPriceStatus').value = p.priceStatus || 'priced';
     document.getElementById('pfPrice').value = p.price;
     document.getElementById('pfOld').value = p.old;
     document.getElementById('pfCost').value = (p.costPrice !== undefined && p.costPrice !== null && p.costPrice !== 0) ? p.costPrice : '';
+    document.getElementById('pfWholesale').value = (p.wholesalePrice !== undefined && p.wholesalePrice !== null) ? p.wholesalePrice : '';
+    document.getElementById('pfLandedCost').value = (p.landedCost !== undefined && p.landedCost !== null) ? p.landedCost : '';
+    document.getElementById('pfSupplier').value = p.supplierRef || '';
     document.getElementById('pfStatus').value = p.status || 'in_stock';
     document.getElementById('pfQuantity').value = (p.quantity !== null && p.quantity !== undefined) ? p.quantity : '';
+    document.getElementById('pfReorderLevel').value = (p.reorderLevel !== undefined && p.reorderLevel !== null && p.reorderLevel !== 5) ? p.reorderLevel : '';
+    document.getElementById('pfIncomingStock').value = (p.incomingStock) ? p.incomingStock : '';
     document.getElementById('pfImage').value = '';
 
     const categorySelect = document.getElementById('pfCategory');
@@ -1057,6 +1158,192 @@
     const loc = locateProductByName(name);
     if(!loc){ alert('Could not find this product to edit.'); return; }
     editProduct(loc.cat, loc.i);
+  }
+
+  // ===== Suppliers =====
+  let SUPPLIERS = [];
+  function loadSuppliers(){
+    if(!db) return;
+    db.collection('suppliers').orderBy('createdAt','desc').limit(100)
+      .onSnapshot(snap => {
+        SUPPLIERS = snap.docs.map(d => ({...d.data(), docId:d.id}));
+        renderSuppliersList();
+        populateSupplierDropdown();
+      }, err => {
+        console.warn('Suppliers load failed:', err);
+        const el = document.getElementById('suppliersList');
+        if(el) el.innerHTML = '<p style="font-size:0.85rem; color:rgba(23,20,18,0.5);">Could not load suppliers: ' + err.message + '</p>';
+      });
+  }
+  function renderSuppliersList(){
+    const el = document.getElementById('suppliersList');
+    if(!el) return;
+    if(SUPPLIERS.length === 0){ el.innerHTML = '<p style="font-size:0.85rem; color:rgba(23,20,18,0.5);">No suppliers yet.</p>'; return; }
+    el.innerHTML = SUPPLIERS.map(s => `
+      <div class="admin-row">
+        <div>
+          <strong>${(s.name||'').replace(/</g,'&lt;')}</strong>
+          ${s.platform ? `<span class="demo-tag">${s.platform.replace(/</g,'&lt;')}</span>` : ''}
+          ${s.name === 'Supplier TBD' ? '<span class="demo-tag oos">Unverified Placeholder</span>' : ''}
+          <br>
+          <span style="font-size:0.78rem; color:rgba(23,20,18,0.6);">${(s.categorySupplied||'Category not on file').replace(/</g,'&lt;')}${s.phone ? ' · '+s.phone.replace(/</g,'&lt;') : ' · Phone not on file'}</span>
+          ${s.notes ? `<br><span style="font-size:0.76rem; color:rgba(23,20,18,0.5);">${s.notes.replace(/</g,'&lt;')}</span>` : ''}
+        </div>
+      </div>`).join('');
+  }
+  function populateSupplierDropdown(){
+    const sel = document.getElementById('pfSupplier');
+    if(!sel) return;
+    const current = sel.value;
+    sel.innerHTML = '<option value="">No supplier linked</option>' + SUPPLIERS.map(s => `<option value="${s.docId}">${(s.name||'').replace(/</g,'&lt;')}</option>`).join('');
+    sel.value = current;
+  }
+  function supplierNameById(id){
+    const s = SUPPLIERS.find(x => x.docId === id);
+    return s ? s.name : null;
+  }
+
+  // ===== Purchase Orders =====
+  let PURCHASE_ORDERS = [];
+  function loadPurchaseOrders(){
+    if(!db) return;
+    db.collection('purchaseOrders').orderBy('createdAt','desc').limit(200)
+      .onSnapshot(snap => {
+        PURCHASE_ORDERS = snap.docs.map(d => ({...d.data(), docId:d.id}));
+        renderPurchaseOrdersList();
+      }, err => {
+        console.warn('Purchase orders load failed:', err);
+        const el = document.getElementById('purchaseOrdersList');
+        if(el) el.innerHTML = '<p style="font-size:0.85rem; color:rgba(23,20,18,0.5);">Could not load purchase orders: ' + err.message + '</p>';
+      });
+  }
+  function renderPurchaseOrdersList(){
+    const el = document.getElementById('purchaseOrdersList');
+    if(!el) return;
+    if(PURCHASE_ORDERS.length === 0){ el.innerHTML = '<p style="font-size:0.85rem; color:rgba(23,20,18,0.5);">No purchase orders yet.</p>'; return; }
+    el.innerHTML = PURCHASE_ORDERS.map(po => `
+      <div class="admin-row">
+        <div>
+          <strong>${(po.poNumber||'').replace(/</g,'&lt;')}</strong> — ${(po.productName||'').replace(/</g,'&lt;')}
+          ${po.sku ? `<span class="sku-tag">${po.sku.replace(/</g,'&lt;')}</span>` : ''}
+          <span class="status-badge status-${po.paymentStatus==='paid'?'paid':'unpaid'}">${po.paymentStatus||'unpaid'}</span>
+          <span class="status-badge status-confirmed">${(po.orderStatus||'').replace(/_/g,' ')}</span><br>
+          <span style="font-size:0.78rem; color:rgba(23,20,18,0.6);">Supplier: ${(po.supplierName||'Unknown').replace(/</g,'&lt;')} · Qty ${po.qty||0} · Cost GHC ${(po.totalCost||0).toFixed(2)}${po.warehouseArrivalDate ? ' · Arrival: '+new Date(po.warehouseArrivalDate).toLocaleDateString() : ''}</span>
+          ${po.excludeFromInventory ? '<br><span class="demo-tag oos">Excluded from MLuna inventory</span>' : ''}
+        </div>
+      </div>`).join('');
+  }
+
+  // ===== Workbook Import — controlled 5-SKU test batch only =====
+  const IMPORT_BATCH_ID = 'workbook-phase2-neutriherbs-test';
+  const NEUTRIHERBS_SUPPLIER = {
+    name: "Neutriherbs Supplier (Facial Masks)",
+    platform: "Direct Supplier",
+    phone: "",
+    categorySupplied: "Skincare",
+    notes: "Quotation paid: GHS 330 total for eye mask, facial mask, 2x sheet masks, shipping + 2 free lip masks."
+  };
+  const NEUTRIHERBS_TEST_BATCH = [
+    { sku:"ML-MSK-001", n:"Neutriherbs 24K Gold Eye Mask (5pcs x 6g)", category:"skin",
+      note:"Gold under-eye patches, active gold skincare",
+      price:121.00, old:121.00, wholesalePrice:91.00, costPrice:60.60, landedCost:60.60,
+      quantity:1, reorderLevel:5, status:"in_stock", priceStatus:"priced",
+      poNumber:"ML-PO-031", poDate:"2026-08-19", poQty:1, poTotalCost:60.60,
+      paymentStatus:"paid", orderStatus:"in_transit_sea", warehouseArrivalDate:"2026-07-25" },
+    { sku:"ML-MSK-002", n:"Neutriherbs 24K Gold Facial Mask (3pcs x 60g)", category:"skin",
+      note:"Gold facial sheet mask, active gold skincare",
+      price:182.00, old:182.00, wholesalePrice:136.00, costPrice:90.90, landedCost:90.90,
+      quantity:1, reorderLevel:5, status:"in_stock", priceStatus:"priced",
+      poNumber:"ML-PO-032", poDate:"2026-08-19", poQty:1, poTotalCost:90.90,
+      paymentStatus:"paid", orderStatus:"in_transit_sea", warehouseArrivalDate:"2026-07-25" },
+    { sku:"ML-MSK-003", n:"Neutriherbs Collagen Facial Sheet Mask (28ml x 4pcs)", category:"skin",
+      note:"Collagen sheet mask, smooths and softens skin",
+      price:293.00, old:293.00, wholesalePrice:159.00, costPrice:106.05, landedCost:106.05,
+      quantity:1, reorderLevel:5, status:"in_stock", priceStatus:"priced",
+      poNumber:"ML-PO-033", poDate:"2026-08-19", poQty:1, poTotalCost:106.05,
+      paymentStatus:"paid", orderStatus:"in_transit_sea", warehouseArrivalDate:"2026-07-25" },
+    { sku:"ML-MSK-004", n:"Neutriherbs Hyaluronic Acid Facial Sheet Mask (28ml x 4pcs)", category:"skin",
+      note:"Hyaluronic acid sheet mask",
+      price:293.00, old:293.00, wholesalePrice:159.00, costPrice:106.05, landedCost:106.05,
+      quantity:1, reorderLevel:5, status:"in_stock", priceStatus:"priced",
+      poNumber:"ML-PO-034", poDate:"2026-08-19", poQty:1, poTotalCost:106.05,
+      paymentStatus:"paid", orderStatus:"in_transit_sea", warehouseArrivalDate:"2026-07-25" },
+    { sku:"ML-MSK-005", n:"Neutriherbs Gold Lip Mask (8g) - free gift, 2 units", category:"skin",
+      note:"Free gift item from supplier - nominal resale price",
+      price:20.00, old:20.00, wholesalePrice:15.00, costPrice:0.00, landedCost:0.00,
+      quantity:2, reorderLevel:5, status:"in_stock", priceStatus:"priced",
+      poNumber:"ML-PO-035", poDate:"2026-08-19", poQty:2, poTotalCost:0.00,
+      paymentStatus:"paid", orderStatus:"in_transit_sea", warehouseArrivalDate:"2026-07-25" }
+  ];
+
+  async function importApprovedTestBatch(){
+    if(!db){ alert('Firebase isn\'t connected yet.'); return; }
+    const btn = document.getElementById('importBatchBtn');
+    const resultBox = document.getElementById('importResultBox');
+    resultBox.style.display = 'block';
+    btn.disabled = true;
+    btn.textContent = 'Checking...';
+    try{
+      const existing = await db.collection('products').where('importBatchId','==',IMPORT_BATCH_ID).get();
+      if(!existing.empty){
+        resultBox.innerHTML = '<strong>Already imported.</strong> ' + existing.size + ' product(s) already exist with batch ID "' + IMPORT_BATCH_ID + '". No new writes were made.';
+        btn.textContent = 'Already Imported';
+        return;
+      }
+
+      btn.textContent = 'Creating supplier...';
+      let supplierId;
+      const supSnap = await db.collection('suppliers').where('name','==',NEUTRIHERBS_SUPPLIER.name).limit(1).get();
+      if(!supSnap.empty){
+        supplierId = supSnap.docs[0].id;
+      } else {
+        const supRef = await db.collection('suppliers').add({...NEUTRIHERBS_SUPPLIER, createdAt: Date.now()});
+        supplierId = supRef.id;
+      }
+
+      const createdLines = [];
+      for(const item of NEUTRIHERBS_TEST_BATCH){
+        btn.textContent = 'Importing ' + item.sku + '...';
+        const productData = {
+          category: item.category, n: item.n, note: item.note,
+          price: item.price, old: item.old, costPrice: item.costPrice,
+          wholesalePrice: item.wholesalePrice, landedCost: item.landedCost,
+          images: [], variants: [], optionGroups: [], comboStock: {},
+          status: item.status, quantity: item.quantity,
+          sku: item.sku, reorderLevel: item.reorderLevel, incomingStock: 0,
+          supplierRef: supplierId, priceStatus: item.priceStatus,
+          importedFromWorkbook: true, importBatchId: IMPORT_BATCH_ID,
+          archived: false, sortOrder: Date.now()
+        };
+        const prodRef = await db.collection('products').add(productData);
+
+        const poData = {
+          poNumber: item.poNumber,
+          date: new Date(item.poDate).getTime(),
+          supplierRef: supplierId, supplierName: NEUTRIHERBS_SUPPLIER.name,
+          sku: item.sku, productName: item.n, productRef: prodRef.id,
+          qty: item.poQty, unitCost: item.costPrice, totalCost: item.poTotalCost,
+          paymentStatus: item.paymentStatus, orderStatus: item.orderStatus,
+          warehouseArrivalDate: new Date(item.warehouseArrivalDate).getTime(),
+          notes: 'Imported from workbook audit — Phase 2 controlled test batch (' + IMPORT_BATCH_ID + ')',
+          excludeFromInventory: false,
+          importBatchId: IMPORT_BATCH_ID, createdAt: Date.now()
+        };
+        await db.collection('purchaseOrders').add(poData);
+
+        createdLines.push(item.sku + ' — ' + item.n + ' — product ' + prodRef.id);
+      }
+
+      resultBox.innerHTML = '<strong>Import complete: 5 products, 5 purchase orders, 1 supplier.</strong>' + createdLines.join('<br>');
+      btn.textContent = 'Import Complete';
+      loadProductsFromFirestore();
+      loadSuppliers();
+      loadPurchaseOrders();
+    }catch(err){
+      resultBox.innerHTML = '<strong>Import failed:</strong> ' + err.message;
+      btn.disabled = false;
+      btn.textContent = 'Import Approved Test Batch (5 Neutriherbs SKUs)';
+    }
   }
 
   // ===== Customer leads (newsletter + wholesale signups) =====
@@ -1252,6 +1539,11 @@
           : p.status === 'coming_soon' ? '<span class="demo-tag">Coming Soon</span>' : '';
         const archivedTag = p.archived ? '<span class="demo-tag oos">Archived</span>' : '';
         const qtyTag = (!hasOptions && p.quantity !== null && p.quantity !== undefined) ? `<span class="demo-tag">Qty: ${p.quantity}</span>` : '';
+        const skuTag = p.sku ? `<span class="sku-tag">${p.sku.replace(/</g,'&lt;')}</span>` : '';
+        const priceStatusTag = p.priceStatus ? `<span class="pricestatus-badge pricestatus-${p.priceStatus}">${p.priceStatus.replace(/_/g,' ')}</span>` : '';
+        const supplierLabel = p.supplierRef ? supplierNameById(p.supplierRef) : null;
+        const supplierTag = supplierLabel ? `<span class="demo-tag">${supplierLabel.replace(/</g,'&lt;')}</span>` : '';
+        const workbookTag = p.importedFromWorkbook ? '<span class="demo-tag">from workbook</span>' : '';
 
         let comboListHtml = '';
         if(hasOptions){
@@ -1279,11 +1571,11 @@
             <div class="admin-row-left">
               ${cover ? `<img src="${cover}" alt="">` : ''}
               <div>
-                <strong>${p.n}</strong> <span class="price">GHC ${p.price.toFixed(2)}</span>
+                <strong>${p.n}</strong>${skuTag} <span class="price">GHC ${p.price.toFixed(2)}</span>
                 ${p.images && p.images.length > 1 ? `<span class="demo-tag">${p.images.length} photos</span>` : ''}
                 ${p.variants && p.variants.length ? `<span class="demo-tag">${p.variants.length} colours</span>` : ''}
                 ${hasOptions ? `<span class="demo-tag">${p.optionGroups.length} option groups</span>` : ''}
-                ${statusTag}${qtyTag}${archivedTag}
+                ${statusTag}${qtyTag}${archivedTag}${priceStatusTag}${supplierTag}${workbookTag}
                 ${p.isStarter ? '<span class="demo-tag">starter item</span>' : ''}
               </div>
             </div>
