@@ -385,6 +385,10 @@
         <div>
           <label>Cost Price (GHC) — what you paid. Never shown to customers.</label>
           <input type="number" step="0.01" id="pfCost" placeholder="0.00">
+          <label style="display:flex; align-items:center; gap:8px; margin-top:8px; text-transform:none; font-weight:400;">
+            <input type="checkbox" id="pfIsFreeGift" style="width:auto;">
+            This is a legitimate free gift (real zero cost, not unknown/pending)
+          </label>
         </div>
         <div>
           <label>Wholesale Price (GHC, optional)</label>
@@ -706,7 +710,7 @@
     for(const cat in DEFAULT_PRODUCTS){
       base[cat] = DEFAULT_PRODUCTS[cat].map((p,i) => ({
         ...p, images:[], variants:[], optionGroups:[], status:'in_stock', quantity:null, comboStock:{}, archived:false, starterKey:cat+'-'+i, docId:null, isStarter:true,
-        costPrice:0, sku:null, wholesalePrice:null, landedCost:null, incomingStock:0, reorderLevel:5, supplierRef:null, priceStatus:null, importedFromWorkbook:false, importBatchId:null
+        costPrice:0, sku:null, wholesalePrice:null, landedCost:null, incomingStock:0, reorderLevel:5, supplierRef:null, priceStatus:null, importedFromWorkbook:false, importBatchId:null, isFreeGift:false
       }));
     }
     return base;
@@ -777,7 +781,8 @@
         const priceStatus = d.priceStatus || null;
         const importedFromWorkbook = !!d.importedFromWorkbook;
         const importBatchId = d.importBatchId || null;
-        const entry = {n:d.n, note:d.note||'', price:Number(d.price), old:Number(d.old||d.price), images, variants, optionGroups, status, quantity, comboStock, archived: !!d.archived, docId:doc.id, starterKey:d.starterKey||null, costPrice, sku, wholesalePrice, landedCost, incomingStock, reorderLevel, supplierRef, priceStatus, importedFromWorkbook, importBatchId};
+        const isFreeGift = !!d.isFreeGift;
+        const entry = {n:d.n, note:d.note||'', price:Number(d.price), old:Number(d.old||d.price), images, variants, optionGroups, status, quantity, comboStock, archived: !!d.archived, docId:doc.id, starterKey:d.starterKey||null, costPrice, sku, wholesalePrice, landedCost, incomingStock, reorderLevel, supplierRef, priceStatus, importedFromWorkbook, importBatchId, isFreeGift};
         if(d.starterKey){
           starterOverrides[d.starterKey] = entry;
         } else {
@@ -931,6 +936,7 @@
     document.getElementById('pfPrice').value = '';
     document.getElementById('pfOld').value = '';
     document.getElementById('pfCost').value = '';
+    document.getElementById('pfIsFreeGift').checked = false;
     document.getElementById('pfWholesale').value = '';
     document.getElementById('pfLandedCost').value = '';
     document.getElementById('pfSupplier').value = '';
@@ -1024,6 +1030,7 @@
         price: Number(document.getElementById('pfPrice').value),
         old: Number(document.getElementById('pfOld').value) || Number(document.getElementById('pfPrice').value),
         costPrice: Number(document.getElementById('pfCost').value) || 0,
+        isFreeGift: document.getElementById('pfIsFreeGift').checked,
         sku: skuRaw || null,
         priceStatus: document.getElementById('pfPriceStatus').value,
         wholesalePrice: wholesaleRaw === '' ? null : Number(wholesaleRaw),
@@ -1074,6 +1081,7 @@
     document.getElementById('pfPrice').value = p.price;
     document.getElementById('pfOld').value = p.old;
     document.getElementById('pfCost').value = (p.costPrice !== undefined && p.costPrice !== null && p.costPrice !== 0) ? p.costPrice : '';
+    document.getElementById('pfIsFreeGift').checked = !!p.isFreeGift;
     document.getElementById('pfWholesale').value = (p.wholesalePrice !== undefined && p.wholesalePrice !== null) ? p.wholesalePrice : '';
     document.getElementById('pfLandedCost').value = (p.landedCost !== undefined && p.landedCost !== null) ? p.landedCost : '';
     document.getElementById('pfSupplier').value = p.supplierRef || '';
@@ -1230,6 +1238,7 @@
           <span class="status-badge status-confirmed">${(po.orderStatus||'').replace(/_/g,' ')}</span><br>
           <span style="font-size:0.78rem; color:rgba(23,20,18,0.6);">Supplier: ${(po.supplierName||'Unknown').replace(/</g,'&lt;')} · Qty ${po.qty||0} · Cost GHC ${(po.totalCost||0).toFixed(2)}${po.warehouseArrivalDate ? ' · Arrival: '+new Date(po.warehouseArrivalDate).toLocaleDateString() : ''}</span>
           ${po.excludeFromInventory ? '<br><span class="demo-tag oos">Excluded from MLuna inventory</span>' : ''}
+          ${po.dateValidationStatus === 'inconsistent' ? `<br><span class="demo-tag oos" title="${(po.dateValidationNote||'').replace(/"/g,'&quot;')}">⚠ Date inconsistency — ${po.dateValidationNote}</span>` : ''}
         </div>
       </div>`).join('');
   }
@@ -1270,11 +1279,21 @@
       paymentStatus:"paid", orderStatus:"in_transit_sea", warehouseArrivalDate:"2026-07-25" },
     { sku:"ML-MSK-005", n:"Neutriherbs Gold Lip Mask (8g) - free gift, 2 units", category:"skin",
       note:"Free gift item from supplier - nominal resale price",
-      price:20.00, old:20.00, wholesalePrice:15.00, costPrice:0.00, landedCost:0.00,
+      price:20.00, old:20.00, wholesalePrice:15.00, costPrice:0.00, landedCost:0.00, isFreeGift:true,
       quantity:2, reorderLevel:5, status:"in_stock", priceStatus:"priced",
       poNumber:"ML-PO-035", poDate:"2026-08-19", poQty:2, poTotalCost:0.00,
       paymentStatus:"paid", orderStatus:"in_transit_sea", warehouseArrivalDate:"2026-07-25" }
   ];
+
+  function computeDateValidation(poDateStr, arrivalDateStr){
+    if(!poDateStr || !arrivalDateStr) return {status:'unknown', note:''};
+    const poTime = new Date(poDateStr).getTime();
+    const arrivalTime = new Date(arrivalDateStr).getTime();
+    if(arrivalTime < poTime){
+      return {status:'inconsistent', note:'Warehouse arrival date precedes PO date in source workbook.'};
+    }
+    return {status:'consistent', note:''};
+  }
 
   async function importApprovedTestBatch(){
     if(!db){ alert('Firebase isn\'t connected yet.'); return; }
@@ -1288,6 +1307,19 @@
       if(!existing.empty){
         resultBox.innerHTML = '<strong>Already imported.</strong> ' + existing.size + ' product(s) already exist with batch ID "' + IMPORT_BATCH_ID + '". No new writes were made.';
         btn.textContent = 'Already Imported';
+        return;
+      }
+
+      btn.textContent = 'Checking for existing SKUs...';
+      const skuConflicts = [];
+      for(const item of NEUTRIHERBS_TEST_BATCH){
+        const skuSnap = await db.collection('products').where('sku','==',item.sku).limit(1).get();
+        if(!skuSnap.empty) skuConflicts.push(item.sku);
+      }
+      if(skuConflicts.length){
+        resultBox.innerHTML = '<strong>Import stopped — SKU conflict.</strong> These SKUs already exist on a different product and would be duplicated: ' + skuConflicts.join(', ') + '. No writes were made. Resolve the conflicting product(s) first.';
+        btn.disabled = false;
+        btn.textContent = 'Import Approved Test Batch (5 Neutriherbs SKUs)';
         return;
       }
 
@@ -1306,7 +1338,7 @@
         btn.textContent = 'Importing ' + item.sku + '...';
         const productData = {
           category: item.category, n: item.n, note: item.note,
-          price: item.price, old: item.old, costPrice: item.costPrice,
+          price: item.price, old: item.old, costPrice: item.costPrice, isFreeGift: !!item.isFreeGift,
           wholesalePrice: item.wholesalePrice, landedCost: item.landedCost,
           images: [], variants: [], optionGroups: [], comboStock: {},
           status: item.status, quantity: item.quantity,
@@ -1317,6 +1349,7 @@
         };
         const prodRef = await db.collection('products').add(productData);
 
+        const dateCheck = computeDateValidation(item.poDate, item.warehouseArrivalDate);
         const poData = {
           poNumber: item.poNumber,
           date: new Date(item.poDate).getTime(),
@@ -1327,6 +1360,8 @@
           warehouseArrivalDate: new Date(item.warehouseArrivalDate).getTime(),
           notes: 'Imported from workbook audit — Phase 2 controlled test batch (' + IMPORT_BATCH_ID + ')',
           excludeFromInventory: false,
+          dateValidationStatus: dateCheck.status,
+          dateValidationNote: dateCheck.note,
           importBatchId: IMPORT_BATCH_ID, createdAt: Date.now()
         };
         await db.collection('purchaseOrders').add(poData);
@@ -1824,7 +1859,7 @@
         } else {
           stock = null;
         }
-        lookup[p.n] = {category:cat, categoryLabel: CATEGORY_LABELS[cat]||customCategoryLabels[cat]||cat, costPrice: Number(p.costPrice||0), stock};
+        lookup[p.n] = {category:cat, categoryLabel: CATEGORY_LABELS[cat]||customCategoryLabels[cat]||cat, costPrice: Number(p.costPrice||0), stock, isFreeGift: !!p.isFreeGift};
       });
     }
     return lookup;
@@ -1894,12 +1929,13 @@
 
     return Object.keys(stats).map(name => {
       const s = stats[name];
-      const info = lookup[name] || {category:'', categoryLabel:'Unlisted / Removed', costPrice:0, stock:null};
+      const info = lookup[name] || {category:'', categoryLabel:'Unlisted / Removed', costPrice:0, stock:null, isFreeGift:false};
       const cost = info.costPrice * s.units;
       const grossProfit = s.sales - cost;
       const margin = s.sales > 0 ? (grossProfit / s.sales * 100) : 0;
       const repeatBuyers = Object.values(s.buyerCounts).filter(c => c > 1).length;
-      return {name, category:info.category, categoryLabel:info.categoryLabel, sales:s.sales, cost, grossProfit, margin, units:s.units, stock:info.stock, repeatBuyers, hasCost: info.costPrice > 0};
+      const hasCost = info.costPrice > 0 || info.isFreeGift;
+      return {name, category:info.category, categoryLabel:info.categoryLabel, sales:s.sales, cost, grossProfit, margin, units:s.units, stock:info.stock, repeatBuyers, hasCost};
     });
   }
 
