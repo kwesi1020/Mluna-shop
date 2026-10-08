@@ -190,6 +190,7 @@
   .sku-tag{ font-family:'Space Mono', monospace; font-size:0.68rem; color:rgba(23,20,18,0.5); margin-left:6px; }
   .import-result-box{ border:1px solid var(--line); border-radius:var(--radius); background:#fff; padding:16px; margin-top:14px; font-size:0.82rem; line-height:1.7; }
   .import-result-box strong{ display:block; margin-bottom:6px; }
+  .stockunverified-tag{ font-size:0.62rem; text-transform:uppercase; letter-spacing:0.05em; font-weight:700; padding:3px 8px; border-radius:100px; display:inline-block; margin-left:6px; vertical-align:middle; background:#f0e3c0; color:#7a5c00; }
 
   @media (max-width: 640px){ .form-grid{ grid-template-columns:1fr; } }
 </style>
@@ -328,7 +329,7 @@
       <button id="importBatchBtn" class="submit-btn" onclick="importApprovedTestBatch()">Import Approved Test Batch (5 Neutriherbs SKUs)</button>
       <div id="importResultBox" class="import-result-box" style="display:none;"></div>
       <button id="importBatch1Btn" class="submit-btn" onclick="importBatch1()" style="margin-top:14px;">Import Batch 1 — 44 Fully-Priced SKUs (Bags, Home Textiles, Fragrance, Packaging, Skincare)</button>
-      <p style="font-size:0.74rem; color:rgba(23,20,18,0.45); margin-top:8px;">Note: ML-HC-001 (Full English Hand Cream Set) is intentionally excluded from Batch 1 — the workbook shows two conflicting unit costs for it (GHC 7.71 vs GHC 18.91) and this has not been resolved yet.</p>
+      <p style="font-size:0.74rem; color:rgba(23,20,18,0.45); margin-top:8px;">Note: ML-HC-001 (Full English Hand Cream Set) is intentionally excluded — the workbook shows two conflicting unit costs for it (GHC 7.71 vs GHC 18.91), unresolved. 30 of the 44 items import with physical stock marked "Unverified — Confirm Stock" (shown Coming Soon) because the native Inventory quantities couldn't be reliably confirmed from the converted workbook — update each one's real quantity in Edit Product once you've checked the actual stock, then switch its Status to In Stock. The 14 Reed Diffuser (RD) items are the exception: the workbook explicitly states "0 in hand, 2 incoming," so those import with real, source-confirmed numbers.</p>
       <div id="importBatch1ResultBox" class="import-result-box" style="display:none;"></div>
     </div>
 
@@ -426,6 +427,12 @@
         <div>
           <label>Incoming Stock (optional — from open purchase orders, not yet physically available)</label>
           <input type="number" min="0" step="1" id="pfIncomingStock" placeholder="0">
+        </div>
+        <div>
+          <label style="display:flex; align-items:center; gap:8px; text-transform:none; font-weight:400; margin-top:28px;">
+            <input type="checkbox" id="pfStockVerified" style="width:auto;" checked>
+            Physical quantity above has been checked and is accurate
+          </label>
         </div>
         <div class="full">
           <label>Product Photos (you can select several at once)</label>
@@ -713,7 +720,7 @@
     for(const cat in DEFAULT_PRODUCTS){
       base[cat] = DEFAULT_PRODUCTS[cat].map((p,i) => ({
         ...p, images:[], variants:[], optionGroups:[], status:'in_stock', quantity:null, comboStock:{}, archived:false, starterKey:cat+'-'+i, docId:null, isStarter:true,
-        costPrice:0, sku:null, wholesalePrice:null, landedCost:null, incomingStock:0, reorderLevel:5, supplierRef:null, priceStatus:null, importedFromWorkbook:false, importBatchId:null, isFreeGift:false
+        costPrice:0, sku:null, wholesalePrice:null, landedCost:null, incomingStock:0, reorderLevel:5, supplierRef:null, priceStatus:null, importedFromWorkbook:false, importBatchId:null, isFreeGift:false, stockVerified:true
       }));
     }
     return base;
@@ -785,7 +792,8 @@
         const importedFromWorkbook = !!d.importedFromWorkbook;
         const importBatchId = d.importBatchId || null;
         const isFreeGift = !!d.isFreeGift;
-        const entry = {n:d.n, note:d.note||'', price:Number(d.price), old:Number(d.old||d.price), images, variants, optionGroups, status, quantity, comboStock, archived: !!d.archived, docId:doc.id, starterKey:d.starterKey||null, costPrice, sku, wholesalePrice, landedCost, incomingStock, reorderLevel, supplierRef, priceStatus, importedFromWorkbook, importBatchId, isFreeGift};
+        const stockVerified = (d.stockVerified === undefined || d.stockVerified === null) ? true : !!d.stockVerified;
+        const entry = {n:d.n, note:d.note||'', price:Number(d.price), old:Number(d.old||d.price), images, variants, optionGroups, status, quantity, comboStock, archived: !!d.archived, docId:doc.id, starterKey:d.starterKey||null, costPrice, sku, wholesalePrice, landedCost, incomingStock, reorderLevel, supplierRef, priceStatus, importedFromWorkbook, importBatchId, isFreeGift, stockVerified};
         if(d.starterKey){
           starterOverrides[d.starterKey] = entry;
         } else {
@@ -947,6 +955,7 @@
     document.getElementById('pfQuantity').value = '';
     document.getElementById('pfReorderLevel').value = '';
     document.getElementById('pfIncomingStock').value = '';
+    document.getElementById('pfStockVerified').checked = true;
     document.getElementById('pfImage').value = '';
     document.getElementById('pfPhotoPreviews').innerHTML = '';
     document.getElementById('currentPhotoBox').style.display = 'none';
@@ -1040,6 +1049,7 @@
         landedCost: landedRaw === '' ? null : Number(landedRaw),
         reorderLevel: reorderRaw === '' ? 5 : Number(reorderRaw),
         incomingStock: incomingRaw === '' ? 0 : Number(incomingRaw),
+        stockVerified: document.getElementById('pfStockVerified').checked,
         supplierRef: supplierRaw || null,
         images: images,
         variants: variants,
@@ -1092,6 +1102,7 @@
     document.getElementById('pfQuantity').value = (p.quantity !== null && p.quantity !== undefined) ? p.quantity : '';
     document.getElementById('pfReorderLevel').value = (p.reorderLevel !== undefined && p.reorderLevel !== null && p.reorderLevel !== 5) ? p.reorderLevel : '';
     document.getElementById('pfIncomingStock').value = (p.incomingStock) ? p.incomingStock : '';
+    document.getElementById('pfStockVerified').checked = (p.stockVerified === undefined || p.stockVerified === null) ? true : !!p.stockVerified;
     document.getElementById('pfImage').value = '';
 
     const categorySelect = document.getElementById('pfCategory');
@@ -1345,7 +1356,7 @@
           wholesalePrice: item.wholesalePrice, landedCost: item.landedCost,
           images: [], variants: [], optionGroups: [], comboStock: {},
           status: item.status, quantity: item.quantity,
-          sku: item.sku, reorderLevel: item.reorderLevel, incomingStock: 0,
+          sku: item.sku, reorderLevel: item.reorderLevel, incomingStock: 0, stockVerified: true,
           supplierRef: supplierId, priceStatus: item.priceStatus,
           importedFromWorkbook: true, importBatchId: IMPORT_BATCH_ID,
           archived: false, sortOrder: Date.now()
@@ -1385,6 +1396,9 @@
   }
 
   // ===== Workbook Import — Batch 1: 44 fully-priced SKUs =====
+  // Corrected per Commander validation gate: no batch-wide abort on SKU overlap,
+  // per-SKU skip/conflict handling, deterministic doc IDs for idempotent retries,
+  // no PO-quantity-derived physical stock, PO/supplier duplicate protection.
   const BATCH1_ID = 'workbook-batch1-44skus';
   const BATCH1_SUPPLIERS = [
     { key:"baoding", name:"Baoding Huawuhe Bags & Cases Mfg Co.", platform:"1688 / Alibaba", phone:"", categorySupplied:"Bags", notes:"" },
@@ -1394,46 +1408,53 @@
     { key:"huida", name:"Dongyang Huida Bags & Cases Factory", platform:"1688 / Alibaba", phone:"", categorySupplied:"Fragrance / Bags", notes:"" },
     { key:"danding", name:"Dongyang Danding Crane Crafts Factory (Yiwu)", platform:"1688 / Alibaba", phone:"", categorySupplied:"Crafts & Novelties", notes:"" }
   ];
+  // Non-RD items: quantity set to null and stockVerified:false — the workbook's physical
+  // "Qty in Stock" cells could not be reliably read from the converted document, and PO
+  // quantity/order-status was NOT used as a substitute (Commander instruction B.2).
+  // These import as status:'coming_soon' so nothing is accidentally sellable until the
+  // real count is confirmed and entered manually via Edit Product.
+  // RD items: quantity:0 / incomingStock:2 ARE kept, because the workbook's own Notes
+  // column explicitly states "Ordered qty 2, not yet available" — stated fact, not inferred.
   const BATCH1_SKUS = [
-    { sku:"ML-BAG-001", n:"Stylish Texture Small Bag — Khaki", category:"bags", note:"Everyday structured small bag", price:102.00, old:102.00, wholesalePrice:76.00, costPrice:50.76, quantity:1, reorderLevel:5, poNumber:"ML-PO-001", poDate:"2026-08-01", supplierKey:"baoding" },
-    { sku:"ML-BAG-002", n:"Stylish Texture Small Bag — Black", category:"bags", note:"Everyday structured small bag", price:102.00, old:102.00, wholesalePrice:76.00, costPrice:50.76, quantity:1, reorderLevel:5, poNumber:"ML-PO-002", poDate:"2026-08-01", supplierKey:"baoding" },
-    { sku:"ML-BAG-003", n:"Commuting Large-Capacity Bag — Blue with Brown", category:"bags", note:"Large-capacity commuting bag", price:94.00, old:94.00, wholesalePrice:70.00, costPrice:46.92, quantity:1, reorderLevel:5, poNumber:"ML-PO-003", poDate:"2026-08-01", supplierKey:"baoding" },
-    { sku:"ML-BAG-004", n:"Commuting Large-Capacity Bag — Blue with Black", category:"bags", note:"Large-capacity commuting bag", price:94.00, old:94.00, wholesalePrice:70.00, costPrice:46.92, quantity:1, reorderLevel:5, poNumber:"ML-PO-004", poDate:"2026-08-01", supplierKey:"baoding" },
-    { sku:"ML-BAG-005", n:"Bucket Bag Makeup Case — 8012 Printed Denim, Rice Coffee", category:"bags", note:"Printed denim bucket makeup case", price:108.00, old:108.00, wholesalePrice:81.00, costPrice:53.96, quantity:1, reorderLevel:5, poNumber:"ML-PO-015", poDate:"2026-08-01", supplierKey:"baoding" },
-    { sku:"ML-BAG-006", n:"Bucket Bag Makeup Case — 8012 Printed Denim, Light Pink", category:"bags", note:"Printed denim bucket makeup case", price:108.00, old:108.00, wholesalePrice:81.00, costPrice:53.96, quantity:1, reorderLevel:5, poNumber:"ML-PO-016", poDate:"2026-08-01", supplierKey:"baoding" },
-    { sku:"ML-BAG-007", n:"Bucket Bag Makeup Case — 8012 Printed Denim, Black", category:"bags", note:"Printed denim bucket makeup case", price:108.00, old:108.00, wholesalePrice:81.00, costPrice:53.96, quantity:1, reorderLevel:5, poNumber:"ML-PO-017", poDate:"2026-08-01", supplierKey:"baoding" },
-    { sku:"ML-TWL-001", n:"Factory Direct Coral Velvet Set — Ordinary Coffee Colour", category:"home", note:"Coral velvet home textile set", price:74.00, old:74.00, wholesalePrice:56.00, costPrice:37.17, quantity:1, reorderLevel:5, poNumber:"ML-PO-005", poDate:"2026-08-01", supplierKey:"jinzhou" },
-    { sku:"ML-TWL-002", n:"Factory Direct Coral Velvet Set — Ordinary Rice White", category:"home", note:"Coral velvet home textile set", price:74.00, old:74.00, wholesalePrice:56.00, costPrice:37.17, quantity:1, reorderLevel:5, poNumber:"ML-PO-006", poDate:"2026-08-01", supplierKey:"jinzhou" },
-    { sku:"ML-TWL-003", n:"Factory Direct Coral Velvet Set — Normal Purple", category:"home", note:"Coral velvet home textile set", price:74.00, old:74.00, wholesalePrice:56.00, costPrice:37.17, quantity:1, reorderLevel:5, poNumber:"ML-PO-007", poDate:"2026-08-01", supplierKey:"jinzhou" },
-    { sku:"ML-PFM-001", n:"Best-Selling Women's Fragrance Set — F203a Women's Three-Piece", category:"gifts", note:"Three-piece women's fragrance set", price:92.00, old:92.00, wholesalePrice:69.00, costPrice:45.86, quantity:1, reorderLevel:5, poNumber:"ML-PO-008", poDate:"2026-08-01", supplierKey:"mingquan" },
-    { sku:"ML-PFM-002", n:"Best-Selling Fragrance Set — Dxr626 Knight Confident Men", category:"gifts", note:"Men's fragrance set", price:105.00, old:105.00, wholesalePrice:78.00, costPrice:52.27, quantity:1, reorderLevel:5, poNumber:"ML-PO-009", poDate:"2026-08-01", supplierKey:"mingquan" },
-    { sku:"ML-PKG-001", n:"Milk Ballflyflaise Box Gift — 34x28x6cm, Milk Yellow Airplane", category:"home", note:"Gift packaging box", price:47.00, old:47.00, wholesalePrice:35.00, costPrice:23.53, quantity:3, reorderLevel:5, poNumber:"ML-PO-018", poDate:"2026-08-01", supplierKey:"wuwang" },
-    { sku:"ML-PKG-002", n:"Ins Style Apricot Thickened Wrap — Matte Milk Tea Colour, 70x85+5cm", category:"home", note:"Gift wrap packaging", price:29.00, old:29.00, wholesalePrice:22.00, costPrice:14.45, quantity:10, reorderLevel:5, poNumber:"ML-PO-019", poDate:"2026-08-01", supplierKey:"wuwang" },
-    { sku:"ML-PKG-003", n:"Gradient Colour Express Bag — Glacier Blue", category:"home", note:"Gift packaging bag", price:18.00, old:18.00, wholesalePrice:14.00, costPrice:9.22, quantity:5, reorderLevel:5, poNumber:"ML-PO-020", poDate:"2026-08-01", supplierKey:"wuwang" },
-    { sku:"ML-PKG-004", n:"Gradient Colour Express Bag — Fairy Pink", category:"home", note:"Gift packaging bag", price:18.00, old:18.00, wholesalePrice:14.00, costPrice:9.22, quantity:5, reorderLevel:5, poNumber:"ML-PO-021", poDate:"2026-08-01", supplierKey:"wuwang" },
-    { sku:"ML-PKG-005", n:"Ins Milk White Wave Express Bag — Milky White Polka Dot", category:"home", note:"Gift packaging bag", price:18.00, old:18.00, wholesalePrice:14.00, costPrice:9.22, quantity:10, reorderLevel:5, poNumber:"ML-PO-022", poDate:"2026-08-01", supplierKey:"wuwang" },
-    { sku:"ML-DIF-001", n:"Cross-Border Foreign Reed Diffuser — Strawberry, 120ml", category:"gifts", note:"Reed diffuser, fruity scent", price:71.00, old:71.00, wholesalePrice:53.00, costPrice:35.34, quantity:1, reorderLevel:5, poNumber:"ML-PO-023", poDate:"2026-08-01", supplierKey:"huida" },
-    { sku:"ML-DIF-002", n:"Cross-Border Foreign Reed Diffuser — Ocean, 120ml", category:"gifts", note:"Reed diffuser, ocean scent", price:71.00, old:71.00, wholesalePrice:53.00, costPrice:35.34, quantity:1, reorderLevel:5, poNumber:"ML-PO-024", poDate:"2026-08-01", supplierKey:"huida" },
-    { sku:"ML-DIF-003", n:"Cross-Border Foreign Reed Diffuser — Lavender, 120ml", category:"gifts", note:"Reed diffuser, lavender scent", price:71.00, old:71.00, wholesalePrice:53.00, costPrice:35.34, quantity:1, reorderLevel:5, poNumber:"ML-PO-025", poDate:"2026-08-01", supplierKey:"huida" },
-    { sku:"ML-CND-001", n:"Iced Coffee Scented Candle — Green Jasmine Iced Coffee", category:"gifts", note:"Layered soy candle in glass jar", price:36.00, old:36.00, wholesalePrice:27.00, costPrice:17.99, quantity:1, reorderLevel:5, poNumber:"ML-PO-026", poDate:"2026-08-01", supplierKey:"wuwang" },
-    { sku:"ML-CND-002", n:"Iced Coffee Scented Candle — Zong Coffee Milk Flavour", category:"gifts", note:"Layered soy candle in glass jar", price:36.00, old:36.00, wholesalePrice:27.00, costPrice:17.99, quantity:1, reorderLevel:5, poNumber:"ML-PO-027", poDate:"2026-08-01", supplierKey:"wuwang" },
-    { sku:"ML-CND-003", n:"Iced Coffee Scented Candle — Pink Strawberry Iced Coffee", category:"gifts", note:"Layered soy candle in glass jar", price:36.00, old:36.00, wholesalePrice:27.00, costPrice:17.99, quantity:1, reorderLevel:5, poNumber:"ML-PO-028", poDate:"2026-08-01", supplierKey:"wuwang" },
-    { sku:"ML-CND-004", n:"Iced Coffee Scented Candle — Purple Lavender Iced Coffee", category:"gifts", note:"Layered soy candle in glass jar", price:33.00, old:33.00, wholesalePrice:25.00, costPrice:16.44, quantity:1, reorderLevel:5, poNumber:"ML-PO-029", poDate:"2026-08-01", supplierKey:"wuwang" },
-    { sku:"ML-CND-005", n:"Iced Coffee Scented Candle — Yellow Lemon Iced Coffee", category:"gifts", note:"Layered soy candle in glass jar", price:36.00, old:36.00, wholesalePrice:27.00, costPrice:17.99, quantity:1, reorderLevel:5, poNumber:"ML-PO-030", poDate:"2026-08-01", supplierKey:"wuwang" },
-    { sku:"ML-RD-001", n:"ASAD Reed Diffuser (120ml)", category:"gifts", note:"Arabic-inspired reed diffuser, black & gold packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, reorderLevel:5, poNumber:"ML-PO-046", poDate:"2026-09-03", supplierKey:"danding" },
-    { sku:"ML-RD-002", n:"Badee Al Oud Reed Diffuser (120ml)", category:"gifts", note:"Arabic-inspired reed diffuser", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, reorderLevel:5, poNumber:"ML-PO-047", poDate:"2026-09-03", supplierKey:"danding" },
-    { sku:"ML-RD-003", n:"9pm Reed Diffuser (120ml)", category:"gifts", note:"Reed diffuser, black & silver striped packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, reorderLevel:5, poNumber:"ML-PO-048", poDate:"2026-09-03", supplierKey:"danding" },
-    { sku:"ML-RD-004", n:"Marshmallow Blush Reed Diffuser - Paris Corner (120ml)", category:"gifts", note:"Gourmand reed diffuser, pastel packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, reorderLevel:5, poNumber:"ML-PO-049", poDate:"2026-09-03", supplierKey:"danding" },
-    { sku:"ML-RD-005", n:"Watermark Aroma Reed Diffuser - Vanilla Praline (120ml)", category:"gifts", note:"Give Me Gourmand series, blue stripe packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, reorderLevel:5, poNumber:"ML-PO-050", poDate:"2026-09-03", supplierKey:"danding" },
-    { sku:"ML-RD-006", n:"Yara Home Reed Diffuser - Orange (120ml)", category:"gifts", note:"Arabic-inspired reed diffuser, orange & white packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, reorderLevel:5, poNumber:"ML-PO-051", poDate:"2026-09-03", supplierKey:"danding" },
-    { sku:"ML-RD-007", n:"Watermark Aroma Reed Diffuser - Berry on Top (120ml)", category:"gifts", note:"Give Me Gourmand series, pink stripe packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, reorderLevel:5, poNumber:"ML-PO-052", poDate:"2026-09-03", supplierKey:"danding" },
-    { sku:"ML-RD-008", n:"Ameerat Al Arab Reed Diffuser (120ml)", category:"gifts", note:"Arabic-inspired reed diffuser, burgundy & gold packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, reorderLevel:5, poNumber:"ML-PO-053", poDate:"2026-09-03", supplierKey:"danding" },
-    { sku:"ML-RD-009", n:"Watermark Aroma Reed Diffuser - Goose Creek (120ml)", category:"gifts", note:"Give Me Gourmand series, tan stripe packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, reorderLevel:5, poNumber:"ML-PO-054", poDate:"2026-09-03", supplierKey:"danding" },
-    { sku:"ML-RD-010", n:"Xerjoff X Reed Diffuser (120ml)", category:"gifts", note:"Reed diffuser, teal & gold packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, reorderLevel:5, poNumber:"ML-PO-055", poDate:"2026-09-03", supplierKey:"danding" },
-    { sku:"ML-RD-011", n:"Yara Home Reed Diffuser - Magenta (120ml)", category:"gifts", note:"Arabic-inspired reed diffuser, magenta & white packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, reorderLevel:5, poNumber:"ML-PO-056", poDate:"2026-09-03", supplierKey:"danding" },
-    { sku:"ML-RD-012", n:"Khamrah Reed Diffuser (120ml)", category:"gifts", note:"Arabic-inspired reed diffuser, black geometric & gold packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, reorderLevel:5, poNumber:"ML-PO-057", poDate:"2026-09-03", supplierKey:"danding" },
-    { sku:"ML-RD-013", n:"Watermark Aroma Reed Diffuser - Mallow Madness (120ml)", category:"gifts", note:"Give Me Gourmand series, purple stripe packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, reorderLevel:5, poNumber:"ML-PO-058", poDate:"2026-09-03", supplierKey:"danding" },
-    { sku:"ML-RD-014", n:"Yara Home Reed Diffuser - Baby Pink (120ml)", category:"gifts", note:"Arabic-inspired reed diffuser, baby pink & silver packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, reorderLevel:5, poNumber:"ML-PO-059", poDate:"2026-09-03", supplierKey:"danding" }
+    { sku:"ML-BAG-001", n:"Stylish Texture Small Bag — Khaki", category:"bags", note:"Everyday structured small bag", price:102.00, old:102.00, wholesalePrice:76.00, costPrice:50.76, quantity:null, stockVerified:false, reorderLevel:5, poNumber:"ML-PO-001", poDate:"2026-08-01", supplierKey:"baoding" },
+    { sku:"ML-BAG-002", n:"Stylish Texture Small Bag — Black", category:"bags", note:"Everyday structured small bag", price:102.00, old:102.00, wholesalePrice:76.00, costPrice:50.76, quantity:null, stockVerified:false, reorderLevel:5, poNumber:"ML-PO-002", poDate:"2026-08-01", supplierKey:"baoding" },
+    { sku:"ML-BAG-003", n:"Commuting Large-Capacity Bag — Blue with Brown", category:"bags", note:"Large-capacity commuting bag", price:94.00, old:94.00, wholesalePrice:70.00, costPrice:46.92, quantity:null, stockVerified:false, reorderLevel:5, poNumber:"ML-PO-003", poDate:"2026-08-01", supplierKey:"baoding" },
+    { sku:"ML-BAG-004", n:"Commuting Large-Capacity Bag — Blue with Black", category:"bags", note:"Large-capacity commuting bag", price:94.00, old:94.00, wholesalePrice:70.00, costPrice:46.92, quantity:null, stockVerified:false, reorderLevel:5, poNumber:"ML-PO-004", poDate:"2026-08-01", supplierKey:"baoding" },
+    { sku:"ML-BAG-005", n:"Bucket Bag Makeup Case — 8012 Printed Denim, Rice Coffee", category:"bags", note:"Printed denim bucket makeup case", price:108.00, old:108.00, wholesalePrice:81.00, costPrice:53.96, quantity:null, stockVerified:false, reorderLevel:5, poNumber:"ML-PO-015", poDate:"2026-08-01", supplierKey:"baoding" },
+    { sku:"ML-BAG-006", n:"Bucket Bag Makeup Case — 8012 Printed Denim, Light Pink", category:"bags", note:"Printed denim bucket makeup case", price:108.00, old:108.00, wholesalePrice:81.00, costPrice:53.96, quantity:null, stockVerified:false, reorderLevel:5, poNumber:"ML-PO-016", poDate:"2026-08-01", supplierKey:"baoding" },
+    { sku:"ML-BAG-007", n:"Bucket Bag Makeup Case — 8012 Printed Denim, Black", category:"bags", note:"Printed denim bucket makeup case", price:108.00, old:108.00, wholesalePrice:81.00, costPrice:53.96, quantity:null, stockVerified:false, reorderLevel:5, poNumber:"ML-PO-017", poDate:"2026-08-01", supplierKey:"baoding" },
+    { sku:"ML-TWL-001", n:"Factory Direct Coral Velvet Set — Ordinary Coffee Colour", category:"home", note:"Coral velvet home textile set", price:74.00, old:74.00, wholesalePrice:56.00, costPrice:37.17, quantity:null, stockVerified:false, reorderLevel:5, poNumber:"ML-PO-005", poDate:"2026-08-01", supplierKey:"jinzhou" },
+    { sku:"ML-TWL-002", n:"Factory Direct Coral Velvet Set — Ordinary Rice White", category:"home", note:"Coral velvet home textile set", price:74.00, old:74.00, wholesalePrice:56.00, costPrice:37.17, quantity:null, stockVerified:false, reorderLevel:5, poNumber:"ML-PO-006", poDate:"2026-08-01", supplierKey:"jinzhou" },
+    { sku:"ML-TWL-003", n:"Factory Direct Coral Velvet Set — Normal Purple", category:"home", note:"Coral velvet home textile set", price:74.00, old:74.00, wholesalePrice:56.00, costPrice:37.17, quantity:null, stockVerified:false, reorderLevel:5, poNumber:"ML-PO-007", poDate:"2026-08-01", supplierKey:"jinzhou" },
+    { sku:"ML-PFM-001", n:"Best-Selling Women's Fragrance Set — F203a Women's Three-Piece", category:"gifts", note:"Three-piece women's fragrance set", price:92.00, old:92.00, wholesalePrice:69.00, costPrice:45.86, quantity:null, stockVerified:false, reorderLevel:5, poNumber:"ML-PO-008", poDate:"2026-08-01", supplierKey:"mingquan" },
+    { sku:"ML-PFM-002", n:"Best-Selling Fragrance Set — Dxr626 Knight Confident Men", category:"gifts", note:"Men's fragrance set", price:105.00, old:105.00, wholesalePrice:78.00, costPrice:52.27, quantity:null, stockVerified:false, reorderLevel:5, poNumber:"ML-PO-009", poDate:"2026-08-01", supplierKey:"mingquan" },
+    { sku:"ML-PKG-001", n:"Milk Ballflyflaise Box Gift — 34x28x6cm, Milk Yellow Airplane", category:"home", note:"Gift packaging box", price:47.00, old:47.00, wholesalePrice:35.00, costPrice:23.53, quantity:null, stockVerified:false, reorderLevel:5, poNumber:"ML-PO-018", poDate:"2026-08-01", supplierKey:"wuwang" },
+    { sku:"ML-PKG-002", n:"Ins Style Apricot Thickened Wrap — Matte Milk Tea Colour, 70x85+5cm", category:"home", note:"Gift wrap packaging", price:29.00, old:29.00, wholesalePrice:22.00, costPrice:14.45, quantity:null, stockVerified:false, reorderLevel:5, poNumber:"ML-PO-019", poDate:"2026-08-01", supplierKey:"wuwang" },
+    { sku:"ML-PKG-003", n:"Gradient Colour Express Bag — Glacier Blue", category:"home", note:"Gift packaging bag", price:18.00, old:18.00, wholesalePrice:14.00, costPrice:9.22, quantity:null, stockVerified:false, reorderLevel:5, poNumber:"ML-PO-020", poDate:"2026-08-01", supplierKey:"wuwang" },
+    { sku:"ML-PKG-004", n:"Gradient Colour Express Bag — Fairy Pink", category:"home", note:"Gift packaging bag", price:18.00, old:18.00, wholesalePrice:14.00, costPrice:9.22, quantity:null, stockVerified:false, reorderLevel:5, poNumber:"ML-PO-021", poDate:"2026-08-01", supplierKey:"wuwang" },
+    { sku:"ML-PKG-005", n:"Ins Milk White Wave Express Bag — Milky White Polka Dot", category:"home", note:"Gift packaging bag", price:18.00, old:18.00, wholesalePrice:14.00, costPrice:9.22, quantity:null, stockVerified:false, reorderLevel:5, poNumber:"ML-PO-022", poDate:"2026-08-01", supplierKey:"wuwang" },
+    { sku:"ML-DIF-001", n:"Cross-Border Foreign Reed Diffuser — Strawberry, 120ml", category:"gifts", note:"Reed diffuser, fruity scent", price:71.00, old:71.00, wholesalePrice:53.00, costPrice:35.34, quantity:null, stockVerified:false, reorderLevel:5, poNumber:"ML-PO-023", poDate:"2026-08-01", supplierKey:"huida" },
+    { sku:"ML-DIF-002", n:"Cross-Border Foreign Reed Diffuser — Ocean, 120ml", category:"gifts", note:"Reed diffuser, ocean scent", price:71.00, old:71.00, wholesalePrice:53.00, costPrice:35.34, quantity:null, stockVerified:false, reorderLevel:5, poNumber:"ML-PO-024", poDate:"2026-08-01", supplierKey:"huida" },
+    { sku:"ML-DIF-003", n:"Cross-Border Foreign Reed Diffuser — Lavender, 120ml", category:"gifts", note:"Reed diffuser, lavender scent", price:71.00, old:71.00, wholesalePrice:53.00, costPrice:35.34, quantity:null, stockVerified:false, reorderLevel:5, poNumber:"ML-PO-025", poDate:"2026-08-01", supplierKey:"huida" },
+    { sku:"ML-CND-001", n:"Iced Coffee Scented Candle — Green Jasmine Iced Coffee", category:"gifts", note:"Layered soy candle in glass jar", price:36.00, old:36.00, wholesalePrice:27.00, costPrice:17.99, quantity:null, stockVerified:false, reorderLevel:5, poNumber:"ML-PO-026", poDate:"2026-08-01", supplierKey:"wuwang" },
+    { sku:"ML-CND-002", n:"Iced Coffee Scented Candle — Zong Coffee Milk Flavour", category:"gifts", note:"Layered soy candle in glass jar", price:36.00, old:36.00, wholesalePrice:27.00, costPrice:17.99, quantity:null, stockVerified:false, reorderLevel:5, poNumber:"ML-PO-027", poDate:"2026-08-01", supplierKey:"wuwang" },
+    { sku:"ML-CND-003", n:"Iced Coffee Scented Candle — Pink Strawberry Iced Coffee", category:"gifts", note:"Layered soy candle in glass jar", price:36.00, old:36.00, wholesalePrice:27.00, costPrice:17.99, quantity:null, stockVerified:false, reorderLevel:5, poNumber:"ML-PO-028", poDate:"2026-08-01", supplierKey:"wuwang" },
+    { sku:"ML-CND-004", n:"Iced Coffee Scented Candle — Purple Lavender Iced Coffee", category:"gifts", note:"Layered soy candle in glass jar", price:33.00, old:33.00, wholesalePrice:25.00, costPrice:16.44, quantity:null, stockVerified:false, reorderLevel:5, poNumber:"ML-PO-029", poDate:"2026-08-01", supplierKey:"wuwang" },
+    { sku:"ML-CND-005", n:"Iced Coffee Scented Candle — Yellow Lemon Iced Coffee", category:"gifts", note:"Layered soy candle in glass jar", price:36.00, old:36.00, wholesalePrice:27.00, costPrice:17.99, quantity:null, stockVerified:false, reorderLevel:5, poNumber:"ML-PO-030", poDate:"2026-08-01", supplierKey:"wuwang" },
+    { sku:"ML-RD-001", n:"ASAD Reed Diffuser (120ml)", category:"gifts", note:"Arabic-inspired reed diffuser, black & gold packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, stockVerified:true, reorderLevel:5, poNumber:"ML-PO-046", poDate:"2026-09-03", supplierKey:"danding" },
+    { sku:"ML-RD-002", n:"Badee Al Oud Reed Diffuser (120ml)", category:"gifts", note:"Arabic-inspired reed diffuser", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, stockVerified:true, reorderLevel:5, poNumber:"ML-PO-047", poDate:"2026-09-03", supplierKey:"danding" },
+    { sku:"ML-RD-003", n:"9pm Reed Diffuser (120ml)", category:"gifts", note:"Reed diffuser, black & silver striped packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, stockVerified:true, reorderLevel:5, poNumber:"ML-PO-048", poDate:"2026-09-03", supplierKey:"danding" },
+    { sku:"ML-RD-004", n:"Marshmallow Blush Reed Diffuser - Paris Corner (120ml)", category:"gifts", note:"Gourmand reed diffuser, pastel packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, stockVerified:true, reorderLevel:5, poNumber:"ML-PO-049", poDate:"2026-09-03", supplierKey:"danding" },
+    { sku:"ML-RD-005", n:"Watermark Aroma Reed Diffuser - Vanilla Praline (120ml)", category:"gifts", note:"Give Me Gourmand series, blue stripe packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, stockVerified:true, reorderLevel:5, poNumber:"ML-PO-050", poDate:"2026-09-03", supplierKey:"danding" },
+    { sku:"ML-RD-006", n:"Yara Home Reed Diffuser - Orange (120ml)", category:"gifts", note:"Arabic-inspired reed diffuser, orange & white packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, stockVerified:true, reorderLevel:5, poNumber:"ML-PO-051", poDate:"2026-09-03", supplierKey:"danding" },
+    { sku:"ML-RD-007", n:"Watermark Aroma Reed Diffuser - Berry on Top (120ml)", category:"gifts", note:"Give Me Gourmand series, pink stripe packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, stockVerified:true, reorderLevel:5, poNumber:"ML-PO-052", poDate:"2026-09-03", supplierKey:"danding" },
+    { sku:"ML-RD-008", n:"Ameerat Al Arab Reed Diffuser (120ml)", category:"gifts", note:"Arabic-inspired reed diffuser, burgundy & gold packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, stockVerified:true, reorderLevel:5, poNumber:"ML-PO-053", poDate:"2026-09-03", supplierKey:"danding" },
+    { sku:"ML-RD-009", n:"Watermark Aroma Reed Diffuser - Goose Creek (120ml)", category:"gifts", note:"Give Me Gourmand series, tan stripe packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, stockVerified:true, reorderLevel:5, poNumber:"ML-PO-054", poDate:"2026-09-03", supplierKey:"danding" },
+    { sku:"ML-RD-010", n:"Xerjoff X Reed Diffuser (120ml)", category:"gifts", note:"Reed diffuser, teal & gold packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, stockVerified:true, reorderLevel:5, poNumber:"ML-PO-055", poDate:"2026-09-03", supplierKey:"danding" },
+    { sku:"ML-RD-011", n:"Yara Home Reed Diffuser - Magenta (120ml)", category:"gifts", note:"Arabic-inspired reed diffuser, magenta & white packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, stockVerified:true, reorderLevel:5, poNumber:"ML-PO-056", poDate:"2026-09-03", supplierKey:"danding" },
+    { sku:"ML-RD-012", n:"Khamrah Reed Diffuser (120ml)", category:"gifts", note:"Arabic-inspired reed diffuser, black geometric & gold packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, stockVerified:true, reorderLevel:5, poNumber:"ML-PO-057", poDate:"2026-09-03", supplierKey:"danding" },
+    { sku:"ML-RD-013", n:"Watermark Aroma Reed Diffuser - Mallow Madness (120ml)", category:"gifts", note:"Give Me Gourmand series, purple stripe packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, stockVerified:true, reorderLevel:5, poNumber:"ML-PO-058", poDate:"2026-09-03", supplierKey:"danding" },
+    { sku:"ML-RD-014", n:"Yara Home Reed Diffuser - Baby Pink (120ml)", category:"gifts", note:"Arabic-inspired reed diffuser, baby pink & silver packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, stockVerified:true, reorderLevel:5, poNumber:"ML-PO-059", poDate:"2026-09-03", supplierKey:"danding" }
   ];
 
   async function importBatch1(){
@@ -1442,87 +1463,133 @@
     const resultBox = document.getElementById('importBatch1ResultBox');
     resultBox.style.display = 'block';
     btn.disabled = true;
-    btn.textContent = 'Checking...';
-    try{
-      const existing = await db.collection('products').where('importBatchId','==',BATCH1_ID).get();
-      if(!existing.empty){
-        resultBox.innerHTML = '<strong>Already imported.</strong> ' + existing.size + ' product(s) already exist with batch ID "' + BATCH1_ID + '". No new writes were made.';
-        btn.textContent = 'Already Imported';
-        return;
-      }
 
-      btn.textContent = 'Validating all 44 SKUs before writing anything...';
-      const skuConflicts = [];
+    const eligible = [];
+    const skipped = [];
+    const conflicting = [];
+    const failed = [];
+
+    try{
+      btn.textContent = 'Checking each of the 44 target SKUs...';
       for(const item of BATCH1_SKUS){
         const skuSnap = await db.collection('products').where('sku','==',item.sku).limit(1).get();
-        if(!skuSnap.empty) skuConflicts.push(item.sku);
+        if(skuSnap.empty){
+          eligible.push(item);
+          continue;
+        }
+        const existingDoc = skuSnap.docs[0];
+        const existingName = existingDoc.data().n || '';
+        if(existingName === item.n){
+          skipped.push({sku:item.sku, n:item.n, reason:'Already exists with matching name — left untouched.'});
+        } else {
+          conflicting.push({sku:item.sku, expectedName:item.n, existingName:existingName, existingDocId:existingDoc.id});
+        }
       }
-      if(skuConflicts.length){
-        resultBox.innerHTML = '<strong>Import stopped — SKU conflict.</strong> These SKUs already exist and would be duplicated: ' + skuConflicts.join(', ') + '. No writes were made. Resolve the conflicting product(s) first, then retry.';
+
+      if(eligible.length === 0){
+        resultBox.innerHTML = '<strong>Nothing to import.</strong><br>' +
+          'Skipped (already present, untouched): ' + skipped.length + '<br>' +
+          'Conflicting (different product under same SKU — needs manual review): ' + conflicting.length +
+          (conflicting.length ? '<br>' + conflicting.map(c => c.sku + ' — expected "' + c.expectedName + '" but found "' + c.existingName + '" (doc ' + c.existingDocId + ')').join('<br>') : '');
         btn.disabled = false;
         btn.textContent = 'Import Batch 1 — 44 Fully-Priced SKUs (Bags, Home Textiles, Fragrance, Packaging, Skincare)';
         return;
       }
 
-      btn.textContent = 'Setting up suppliers...';
+      btn.textContent = 'Setting up suppliers (reusing existing where possible)...';
       const supplierIdByKey = {};
+      const supplierReport = [];
       for(const sup of BATCH1_SUPPLIERS){
         const supSnap = await db.collection('suppliers').where('name','==',sup.name).limit(1).get();
         if(!supSnap.empty){
           supplierIdByKey[sup.key] = supSnap.docs[0].id;
+          supplierReport.push(sup.name + ' — reused existing');
         } else {
-          const supRef = await db.collection('suppliers').add({
-            name: sup.name, platform: sup.platform, phone: sup.phone,
-            categorySupplied: sup.categorySupplied, notes: sup.notes, createdAt: Date.now()
-          });
-          supplierIdByKey[sup.key] = supRef.id;
+          try{
+            const supRef = await db.collection('suppliers').add({
+              name: sup.name, platform: sup.platform, phone: sup.phone,
+              categorySupplied: sup.categorySupplied, notes: sup.notes, createdAt: Date.now()
+            });
+            supplierIdByKey[sup.key] = supRef.id;
+            supplierReport.push(sup.name + ' — created');
+          }catch(supErr){
+            supplierReport.push(sup.name + ' — FAILED: ' + supErr.message);
+          }
         }
       }
 
       let createdCount = 0;
       const createdLines = [];
-      for(const item of BATCH1_SKUS){
-        btn.textContent = 'Importing ' + item.sku + ' (' + (createdCount+1) + ' of ' + BATCH1_SKUS.length + ')...';
+      for(const item of eligible){
+        btn.textContent = 'Importing ' + item.sku + ' (' + (createdCount+1) + ' of ' + eligible.length + ')...';
         const supplierId = supplierIdByKey[item.supplierKey];
-        const productData = {
-          category: item.category, n: item.n, note: item.note,
-          price: item.price, old: item.old, costPrice: item.costPrice, isFreeGift: false,
-          wholesalePrice: item.wholesalePrice, landedCost: null,
-          images: [], variants: [], optionGroups: [], comboStock: {},
-          status: 'in_stock', quantity: item.quantity,
-          sku: item.sku, reorderLevel: item.reorderLevel, incomingStock: item.incomingStock || 0,
-          supplierRef: supplierId, priceStatus: 'priced',
-          importedFromWorkbook: true, importBatchId: BATCH1_ID,
-          archived: false, sortOrder: Date.now()
-        };
-        const prodRef = await db.collection('products').add(productData);
+        try{
+          const productRef = db.collection('products').doc(item.sku);
+          const alreadyThere = await productRef.get();
+          if(alreadyThere.exists){
+            skipped.push({sku:item.sku, n:item.n, reason:'Deterministic ID already present (safe retry) — left untouched.'});
+            continue;
+          }
 
-        const poData = {
-          poNumber: item.poNumber,
-          date: new Date(item.poDate).getTime(),
-          supplierRef: supplierId, supplierName: BATCH1_SUPPLIERS.find(s => s.key === item.supplierKey).name,
-          sku: item.sku, productName: item.n, productRef: prodRef.id,
-          qty: item.quantity + (item.incomingStock || 0), unitCost: item.costPrice, totalCost: item.costPrice * (item.quantity + (item.incomingStock || 0)),
-          paymentStatus: 'paid', orderStatus: (item.incomingStock ? 'processing' : 'shipped'),
-          warehouseArrivalDate: null,
-          notes: 'Imported from workbook audit — Batch 1 (' + BATCH1_ID + ')',
-          excludeFromInventory: false,
-          dateValidationStatus: 'unknown', dateValidationNote: '',
-          importBatchId: BATCH1_ID, createdAt: Date.now()
-        };
-        await db.collection('purchaseOrders').add(poData);
+          const productData = {
+            category: item.category, n: item.n, note: item.note,
+            price: item.price, old: item.old, costPrice: item.costPrice, isFreeGift: false,
+            wholesalePrice: item.wholesalePrice, landedCost: null,
+            images: [], variants: [], optionGroups: [], comboStock: {},
+            status: item.stockVerified ? 'in_stock' : 'coming_soon',
+            quantity: item.quantity,
+            sku: item.sku, reorderLevel: item.reorderLevel, incomingStock: item.incomingStock || 0,
+            stockVerified: !!item.stockVerified,
+            supplierRef: supplierId || null, priceStatus: 'priced',
+            importedFromWorkbook: true, importBatchId: BATCH1_ID,
+            archived: false, sortOrder: Date.now()
+          };
+          await productRef.set(productData);
 
-        createdCount++;
-        createdLines.push(item.sku + ' — ' + item.n);
+          const poRef = db.collection('purchaseOrders').doc(item.poNumber);
+          const poAlreadyThere = await poRef.get();
+          if(!poAlreadyThere.exists){
+            const poData = {
+              poNumber: item.poNumber,
+              date: new Date(item.poDate).getTime(),
+              supplierRef: supplierId || null,
+              supplierName: BATCH1_SUPPLIERS.find(s => s.key === item.supplierKey).name,
+              sku: item.sku, productName: item.n, productRef: item.sku,
+              qty: (item.quantity || 0) + (item.incomingStock || 0),
+              unitCost: item.costPrice,
+              totalCost: item.costPrice * ((item.quantity || 0) + (item.incomingStock || 0)),
+              paymentStatus: 'paid',
+              orderStatus: item.incomingStock ? 'processing' : 'unknown',
+              warehouseArrivalDate: null,
+              notes: 'Imported from workbook audit — Batch 1 (' + BATCH1_ID + ')',
+              excludeFromInventory: false,
+              dateValidationStatus: 'unknown', dateValidationNote: '',
+              importBatchId: BATCH1_ID, createdAt: Date.now()
+            };
+            await poRef.set(poData);
+          }
+
+          createdCount++;
+          createdLines.push(item.sku + ' — ' + item.n + (item.stockVerified ? '' : ' (stock unverified — Coming Soon until confirmed)'));
+        }catch(itemErr){
+          failed.push({sku:item.sku, n:item.n, error:itemErr.message});
+        }
       }
 
-      resultBox.innerHTML = '<strong>Batch 1 import complete: ' + createdCount + ' products, ' + createdCount + ' purchase orders, ' + BATCH1_SUPPLIERS.length + ' suppliers checked/linked.</strong><br>ML-HC-001 intentionally excluded (unresolved cost conflict).<br><br>' + createdLines.join('<br>');
-      btn.textContent = 'Batch 1 Import Complete';
+      resultBox.innerHTML =
+        '<strong>Batch 1 result: ' + createdCount + ' created, ' + skipped.length + ' skipped, ' + conflicting.length + ' conflicting, ' + failed.length + ' failed.</strong><br><br>' +
+        '<strong>Suppliers:</strong><br>' + supplierReport.join('<br>') + '<br><br>' +
+        (createdCount ? '<strong>Created:</strong><br>' + createdLines.join('<br>') + '<br><br>' : '') +
+        (skipped.length ? '<strong>Skipped (already existed, untouched):</strong><br>' + skipped.map(s => s.sku + ' — ' + s.n + ' — ' + s.reason).join('<br>') + '<br><br>' : '') +
+        (conflicting.length ? '<strong>Conflicting (manual review needed, nothing written):</strong><br>' + conflicting.map(c => c.sku + ' — expected "' + c.expectedName + '" but existing doc ' + c.existingDocId + ' has name "' + c.existingName + '"').join('<br>') + '<br><br>' : '') +
+        (failed.length ? '<strong>Failed (not written, retry later):</strong><br>' + failed.map(f => f.sku + ' — ' + f.n + ' — ' + f.error).join('<br>') : '') +
+        '<br>ML-HC-001 intentionally excluded (unresolved cost conflict — not part of this batch).';
+      btn.textContent = 'Batch 1 Run Complete';
       loadProductsFromFirestore();
       loadSuppliers();
       loadPurchaseOrders();
     }catch(err){
-      resultBox.innerHTML = '<strong>Import failed:</strong> ' + err.message;
+      resultBox.innerHTML = '<strong>Import failed before writing:</strong> ' + err.message;
       btn.disabled = false;
       btn.textContent = 'Import Batch 1 — 44 Fully-Priced SKUs (Bags, Home Textiles, Fragrance, Packaging, Skincare)';
     }
@@ -1726,6 +1793,7 @@
         const supplierLabel = p.supplierRef ? supplierNameById(p.supplierRef) : null;
         const supplierTag = supplierLabel ? `<span class="demo-tag">${supplierLabel.replace(/</g,'&lt;')}</span>` : '';
         const workbookTag = p.importedFromWorkbook ? '<span class="demo-tag">from workbook</span>' : '';
+        const unverifiedTag = (p.stockVerified === false) ? '<span class="stockunverified-tag">Unverified — Confirm Stock</span>' : '';
 
         let comboListHtml = '';
         if(hasOptions){
@@ -1757,7 +1825,7 @@
                 ${p.images && p.images.length > 1 ? `<span class="demo-tag">${p.images.length} photos</span>` : ''}
                 ${p.variants && p.variants.length ? `<span class="demo-tag">${p.variants.length} colours</span>` : ''}
                 ${hasOptions ? `<span class="demo-tag">${p.optionGroups.length} option groups</span>` : ''}
-                ${statusTag}${qtyTag}${archivedTag}${priceStatusTag}${supplierTag}${workbookTag}
+                ${statusTag}${qtyTag}${archivedTag}${priceStatusTag}${supplierTag}${workbookTag}${unverifiedTag}
                 ${p.isStarter ? '<span class="demo-tag">starter item</span>' : ''}
               </div>
             </div>
