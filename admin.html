@@ -328,8 +328,8 @@
       <p style="font-size:0.85rem; color:rgba(23,20,18,0.6); margin-bottom:18px;">Controlled, Commander-approved imports from the Mluna Enterprise workbook audit. Each batch is a one-time import — running a batch twice will not create duplicates.</p>
       <button id="importBatchBtn" class="submit-btn" onclick="importApprovedTestBatch()">Import Approved Test Batch (5 Neutriherbs SKUs)</button>
       <div id="importResultBox" class="import-result-box" style="display:none;"></div>
-      <button id="importBatch1Btn" class="submit-btn" onclick="importBatch1()" style="margin-top:14px;">Import Batch 1 — 44 Fully-Priced SKUs (Bags, Home Textiles, Fragrance, Packaging, Skincare)</button>
-      <p style="font-size:0.74rem; color:rgba(23,20,18,0.45); margin-top:8px;">Note: ML-HC-001 (Full English Hand Cream Set) is intentionally excluded — the workbook shows two conflicting unit costs for it (GHC 7.71 vs GHC 18.91), unresolved. 30 of the 44 items import with physical stock marked "Unverified — Confirm Stock" (shown Coming Soon) because the native Inventory quantities couldn't be reliably confirmed from the converted workbook — update each one's real quantity in Edit Product once you've checked the actual stock, then switch its Status to In Stock. The 14 Reed Diffuser (RD) items are the exception: the workbook explicitly states "0 in hand, 2 incoming," so those import with real, source-confirmed numbers.</p>
+      <button id="importBatch1Btn" class="submit-btn" onclick="importBatch1()" style="margin-top:14px;">Import Batch 1 — 45 SKUs (5 already live, 40 new)</button>
+      <p style="font-size:0.74rem; color:rgba(23,20,18,0.45); margin-top:8px;">Batch 1 target: 45 SKUs total. 5 (ML-MSK-001–005) are already live from the earlier test import and will be safely skipped, not recreated. ML-HC-001 is now fully resolved with Commander-verified data — product cost GHC 18.91 and PO cost GHC 7.71 are stored as two separate fields. The remaining 25 SKUs (Bags, Home Textiles, Fragrance sets, Packaging, Diffusers, Candles) still import with physical stock marked "Unverified — Confirm Stock" (shown Coming Soon) because their native Qty in Stock / Reorder Level values have not yet been supplied — update each one's real quantity in Edit Product once confirmed, then switch its Status to In Stock. The 14 Reed Diffuser (RD) items import with real, source-confirmed numbers (0 in hand, 2 incoming), stated explicitly in the workbook's own notes.</p>
       <div id="importBatch1ResultBox" class="import-result-box" style="display:none;"></div>
     </div>
 
@@ -401,6 +401,10 @@
         <div>
           <label>Landed Cost (GHC, optional — cost + freight)</label>
           <input type="number" step="0.01" id="pfLandedCost" placeholder="Leave blank if same as Cost Price">
+        </div>
+        <div>
+          <label>PO Unit Cost (GHC, optional — separate from Cost Price if the purchase order shows a different figure)</label>
+          <input type="number" step="0.01" id="pfPoUnitCost" placeholder="Leave blank if same as Cost Price">
         </div>
         <div>
           <label>Supplier</label>
@@ -720,7 +724,7 @@
     for(const cat in DEFAULT_PRODUCTS){
       base[cat] = DEFAULT_PRODUCTS[cat].map((p,i) => ({
         ...p, images:[], variants:[], optionGroups:[], status:'in_stock', quantity:null, comboStock:{}, archived:false, starterKey:cat+'-'+i, docId:null, isStarter:true,
-        costPrice:0, sku:null, wholesalePrice:null, landedCost:null, incomingStock:0, reorderLevel:5, supplierRef:null, priceStatus:null, importedFromWorkbook:false, importBatchId:null, isFreeGift:false, stockVerified:true
+        costPrice:0, sku:null, wholesalePrice:null, landedCost:null, poUnitCost:null, incomingStock:0, reorderLevel:5, supplierRef:null, priceStatus:null, importedFromWorkbook:false, importBatchId:null, isFreeGift:false, stockVerified:true
       }));
     }
     return base;
@@ -785,6 +789,7 @@
         const sku = d.sku || null;
         const wholesalePrice = (d.wholesalePrice !== undefined && d.wholesalePrice !== null) ? Number(d.wholesalePrice) : null;
         const landedCost = (d.landedCost !== undefined && d.landedCost !== null) ? Number(d.landedCost) : null;
+        const poUnitCost = (d.poUnitCost !== undefined && d.poUnitCost !== null) ? Number(d.poUnitCost) : null;
         const incomingStock = Number(d.incomingStock || 0);
         const reorderLevel = (d.reorderLevel !== undefined && d.reorderLevel !== null) ? Number(d.reorderLevel) : 5;
         const supplierRef = d.supplierRef || null;
@@ -793,7 +798,7 @@
         const importBatchId = d.importBatchId || null;
         const isFreeGift = !!d.isFreeGift;
         const stockVerified = (d.stockVerified === undefined || d.stockVerified === null) ? true : !!d.stockVerified;
-        const entry = {n:d.n, note:d.note||'', price:Number(d.price), old:Number(d.old||d.price), images, variants, optionGroups, status, quantity, comboStock, archived: !!d.archived, docId:doc.id, starterKey:d.starterKey||null, costPrice, sku, wholesalePrice, landedCost, incomingStock, reorderLevel, supplierRef, priceStatus, importedFromWorkbook, importBatchId, isFreeGift, stockVerified};
+        const entry = {n:d.n, note:d.note||'', price:Number(d.price), old:Number(d.old||d.price), images, variants, optionGroups, status, quantity, comboStock, archived: !!d.archived, docId:doc.id, starterKey:d.starterKey||null, costPrice, sku, wholesalePrice, landedCost, poUnitCost, incomingStock, reorderLevel, supplierRef, priceStatus, importedFromWorkbook, importBatchId, isFreeGift, stockVerified};
         if(d.starterKey){
           starterOverrides[d.starterKey] = entry;
         } else {
@@ -950,6 +955,7 @@
     document.getElementById('pfIsFreeGift').checked = false;
     document.getElementById('pfWholesale').value = '';
     document.getElementById('pfLandedCost').value = '';
+    document.getElementById('pfPoUnitCost').value = '';
     document.getElementById('pfSupplier').value = '';
     document.getElementById('pfStatus').value = 'in_stock';
     document.getElementById('pfQuantity').value = '';
@@ -1029,6 +1035,7 @@
       const quantity = qtyRaw === '' ? null : Math.max(0, Number(qtyRaw));
       const wholesaleRaw = document.getElementById('pfWholesale').value;
       const landedRaw = document.getElementById('pfLandedCost').value;
+      const poUnitCostRaw = document.getElementById('pfPoUnitCost').value;
       const reorderRaw = document.getElementById('pfReorderLevel').value;
       const incomingRaw = document.getElementById('pfIncomingStock').value;
       const skuRaw = document.getElementById('pfSku').value.trim();
@@ -1047,6 +1054,7 @@
         priceStatus: document.getElementById('pfPriceStatus').value,
         wholesalePrice: wholesaleRaw === '' ? null : Number(wholesaleRaw),
         landedCost: landedRaw === '' ? null : Number(landedRaw),
+        poUnitCost: poUnitCostRaw === '' ? null : Number(poUnitCostRaw),
         reorderLevel: reorderRaw === '' ? 5 : Number(reorderRaw),
         incomingStock: incomingRaw === '' ? 0 : Number(incomingRaw),
         stockVerified: document.getElementById('pfStockVerified').checked,
@@ -1097,6 +1105,7 @@
     document.getElementById('pfIsFreeGift').checked = !!p.isFreeGift;
     document.getElementById('pfWholesale').value = (p.wholesalePrice !== undefined && p.wholesalePrice !== null) ? p.wholesalePrice : '';
     document.getElementById('pfLandedCost').value = (p.landedCost !== undefined && p.landedCost !== null) ? p.landedCost : '';
+    document.getElementById('pfPoUnitCost').value = (p.poUnitCost !== undefined && p.poUnitCost !== null) ? p.poUnitCost : '';
     document.getElementById('pfSupplier').value = p.supplierRef || '';
     document.getElementById('pfStatus').value = p.status || 'in_stock';
     document.getElementById('pfQuantity').value = (p.quantity !== null && p.quantity !== undefined) ? p.quantity : '';
@@ -1353,7 +1362,7 @@
         const productData = {
           category: item.category, n: item.n, note: item.note,
           price: item.price, old: item.old, costPrice: item.costPrice, isFreeGift: !!item.isFreeGift,
-          wholesalePrice: item.wholesalePrice, landedCost: item.landedCost,
+          wholesalePrice: item.wholesalePrice, landedCost: item.landedCost, poUnitCost: null,
           images: [], variants: [], optionGroups: [], comboStock: {},
           status: item.status, quantity: item.quantity,
           sku: item.sku, reorderLevel: item.reorderLevel, incomingStock: 0, stockVerified: true,
@@ -1395,10 +1404,15 @@
     }
   }
 
-  // ===== Workbook Import — Batch 1: 44 fully-priced SKUs =====
-  // Corrected per Commander validation gate: no batch-wide abort on SKU overlap,
-  // per-SKU skip/conflict handling, deterministic doc IDs for idempotent retries,
-  // no PO-quantity-derived physical stock, PO/supplier duplicate protection.
+  // ===== Workbook Import — Batch 1: 45-SKU scope =====
+  // 5 SKUs (ML-MSK-001–005) already live from the test batch above — skipped, never recreated.
+  // 14 RD items: quantity/incomingStock are explicit workbook text, not PO-derived — verified.
+  // ML-HC-001: fully resolved per Commander-supplied native values. Product cost (18.91) and
+  // PO cost (7.71) are stored as two separate fields (costPrice vs poUnitCost), never merged.
+  // 25 remaining SKUs (Bags, Home Textiles, Fragrance sets, Packaging, Diffusers, Candles):
+  // still genuinely unresolved — their native Qty in Stock / Reorder Level have not been
+  // supplied in this conversation in a form that can be read, so quantity stays null and
+  // stockVerified stays false (status forced to coming_soon) rather than guessed.
   const BATCH1_ID = 'workbook-batch1-44skus';
   const BATCH1_SUPPLIERS = [
     { key:"baoding", name:"Baoding Huawuhe Bags & Cases Mfg Co.", platform:"1688 / Alibaba", phone:"", categorySupplied:"Bags", notes:"" },
@@ -1406,15 +1420,9 @@
     { key:"mingquan", name:"Yiwu Mingquan Cosmetics Co.", platform:"1688 / Alibaba", phone:"", categorySupplied:"Fragrance", notes:"" },
     { key:"wuwang", name:"Yiwu Wuwang Household Goods Co.", platform:"1688 / Alibaba", phone:"", categorySupplied:"Household / Packaging", notes:"" },
     { key:"huida", name:"Dongyang Huida Bags & Cases Factory", platform:"1688 / Alibaba", phone:"", categorySupplied:"Fragrance / Bags", notes:"" },
-    { key:"danding", name:"Dongyang Danding Crane Crafts Factory (Yiwu)", platform:"1688 / Alibaba", phone:"", categorySupplied:"Crafts & Novelties", notes:"" }
+    { key:"danding", name:"Dongyang Danding Crane Crafts Factory (Yiwu)", platform:"1688 / Alibaba", phone:"", categorySupplied:"Crafts & Novelties", notes:"" },
+    { key:"jinfuxuan", name:"Guangzhou Jinfuxuan Biotech Co.", platform:"1688 / Alibaba", phone:"", categorySupplied:"Skincare", notes:"" }
   ];
-  // Non-RD items: quantity set to null and stockVerified:false — the workbook's physical
-  // "Qty in Stock" cells could not be reliably read from the converted document, and PO
-  // quantity/order-status was NOT used as a substitute (Commander instruction B.2).
-  // These import as status:'coming_soon' so nothing is accidentally sellable until the
-  // real count is confirmed and entered manually via Edit Product.
-  // RD items: quantity:0 / incomingStock:2 ARE kept, because the workbook's own Notes
-  // column explicitly states "Ordered qty 2, not yet available" — stated fact, not inferred.
   const BATCH1_SKUS = [
     { sku:"ML-BAG-001", n:"Stylish Texture Small Bag — Khaki", category:"bags", note:"Everyday structured small bag", price:102.00, old:102.00, wholesalePrice:76.00, costPrice:50.76, quantity:null, stockVerified:false, reorderLevel:5, poNumber:"ML-PO-001", poDate:"2026-08-01", supplierKey:"baoding" },
     { sku:"ML-BAG-002", n:"Stylish Texture Small Bag — Black", category:"bags", note:"Everyday structured small bag", price:102.00, old:102.00, wholesalePrice:76.00, costPrice:50.76, quantity:null, stockVerified:false, reorderLevel:5, poNumber:"ML-PO-002", poDate:"2026-08-01", supplierKey:"baoding" },
@@ -1441,6 +1449,7 @@
     { sku:"ML-CND-003", n:"Iced Coffee Scented Candle — Pink Strawberry Iced Coffee", category:"gifts", note:"Layered soy candle in glass jar", price:36.00, old:36.00, wholesalePrice:27.00, costPrice:17.99, quantity:null, stockVerified:false, reorderLevel:5, poNumber:"ML-PO-028", poDate:"2026-08-01", supplierKey:"wuwang" },
     { sku:"ML-CND-004", n:"Iced Coffee Scented Candle — Purple Lavender Iced Coffee", category:"gifts", note:"Layered soy candle in glass jar", price:33.00, old:33.00, wholesalePrice:25.00, costPrice:16.44, quantity:null, stockVerified:false, reorderLevel:5, poNumber:"ML-PO-029", poDate:"2026-08-01", supplierKey:"wuwang" },
     { sku:"ML-CND-005", n:"Iced Coffee Scented Candle — Yellow Lemon Iced Coffee", category:"gifts", note:"Layered soy candle in glass jar", price:36.00, old:36.00, wholesalePrice:27.00, costPrice:17.99, quantity:null, stockVerified:false, reorderLevel:5, poNumber:"ML-PO-030", poDate:"2026-08-01", supplierKey:"wuwang" },
+    { sku:"ML-HC-001", n:"Full English Hand Cream Set (30ml x 6pcs)", category:"skin", note:"Hand cream gift set, 6-piece", price:38.00, old:38.00, wholesalePrice:28.00, costPrice:18.91, landedCost:18.91, poUnitCost:7.71, quantity:3, stockVerified:true, reorderLevel:3, poNumber:"ML-PO-044", poDate:"2026-08-01", supplierKey:"jinfuxuan" },
     { sku:"ML-RD-001", n:"ASAD Reed Diffuser (120ml)", category:"gifts", note:"Arabic-inspired reed diffuser, black & gold packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, stockVerified:true, reorderLevel:5, poNumber:"ML-PO-046", poDate:"2026-09-03", supplierKey:"danding" },
     { sku:"ML-RD-002", n:"Badee Al Oud Reed Diffuser (120ml)", category:"gifts", note:"Arabic-inspired reed diffuser", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, stockVerified:true, reorderLevel:5, poNumber:"ML-PO-047", poDate:"2026-09-03", supplierKey:"danding" },
     { sku:"ML-RD-003", n:"9pm Reed Diffuser (120ml)", category:"gifts", note:"Reed diffuser, black & silver striped packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, stockVerified:true, reorderLevel:5, poNumber:"ML-PO-048", poDate:"2026-09-03", supplierKey:"danding" },
@@ -1470,7 +1479,7 @@
     const failed = [];
 
     try{
-      btn.textContent = 'Checking each of the 44 target SKUs...';
+      btn.textContent = 'Checking each of the 45 target SKUs...';
       for(const item of BATCH1_SKUS){
         const skuSnap = await db.collection('products').where('sku','==',item.sku).limit(1).get();
         if(skuSnap.empty){
@@ -1492,7 +1501,7 @@
           'Conflicting (different product under same SKU — needs manual review): ' + conflicting.length +
           (conflicting.length ? '<br>' + conflicting.map(c => c.sku + ' — expected "' + c.expectedName + '" but found "' + c.existingName + '" (doc ' + c.existingDocId + ')').join('<br>') : '');
         btn.disabled = false;
-        btn.textContent = 'Import Batch 1 — 44 Fully-Priced SKUs (Bags, Home Textiles, Fragrance, Packaging, Skincare)';
+        btn.textContent = 'Import Batch 1 — 45 SKUs (5 already live, 40 new)';
         return;
       }
 
@@ -1534,7 +1543,9 @@
           const productData = {
             category: item.category, n: item.n, note: item.note,
             price: item.price, old: item.old, costPrice: item.costPrice, isFreeGift: false,
-            wholesalePrice: item.wholesalePrice, landedCost: null,
+            wholesalePrice: item.wholesalePrice,
+            landedCost: (item.landedCost !== undefined && item.landedCost !== null) ? item.landedCost : null,
+            poUnitCost: (item.poUnitCost !== undefined && item.poUnitCost !== null) ? item.poUnitCost : null,
             images: [], variants: [], optionGroups: [], comboStock: {},
             status: item.stockVerified ? 'in_stock' : 'coming_soon',
             quantity: item.quantity,
@@ -1549,6 +1560,7 @@
           const poRef = db.collection('purchaseOrders').doc(item.poNumber);
           const poAlreadyThere = await poRef.get();
           if(!poAlreadyThere.exists){
+            const poUnitCostForRecord = (item.poUnitCost !== undefined && item.poUnitCost !== null) ? item.poUnitCost : item.costPrice;
             const poData = {
               poNumber: item.poNumber,
               date: new Date(item.poDate).getTime(),
@@ -1556,8 +1568,8 @@
               supplierName: BATCH1_SUPPLIERS.find(s => s.key === item.supplierKey).name,
               sku: item.sku, productName: item.n, productRef: item.sku,
               qty: (item.quantity || 0) + (item.incomingStock || 0),
-              unitCost: item.costPrice,
-              totalCost: item.costPrice * ((item.quantity || 0) + (item.incomingStock || 0)),
+              unitCost: poUnitCostForRecord,
+              totalCost: poUnitCostForRecord * ((item.quantity || 0) + (item.incomingStock || 0)),
               paymentStatus: 'paid',
               orderStatus: item.incomingStock ? 'processing' : 'unknown',
               warehouseArrivalDate: null,
@@ -1582,8 +1594,7 @@
         (createdCount ? '<strong>Created:</strong><br>' + createdLines.join('<br>') + '<br><br>' : '') +
         (skipped.length ? '<strong>Skipped (already existed, untouched):</strong><br>' + skipped.map(s => s.sku + ' — ' + s.n + ' — ' + s.reason).join('<br>') + '<br><br>' : '') +
         (conflicting.length ? '<strong>Conflicting (manual review needed, nothing written):</strong><br>' + conflicting.map(c => c.sku + ' — expected "' + c.expectedName + '" but existing doc ' + c.existingDocId + ' has name "' + c.existingName + '"').join('<br>') + '<br><br>' : '') +
-        (failed.length ? '<strong>Failed (not written, retry later):</strong><br>' + failed.map(f => f.sku + ' — ' + f.n + ' — ' + f.error).join('<br>') : '') +
-        '<br>ML-HC-001 intentionally excluded (unresolved cost conflict — not part of this batch).';
+        (failed.length ? '<strong>Failed (not written, retry later):</strong><br>' + failed.map(f => f.sku + ' — ' + f.n + ' — ' + f.error).join('<br>') : '');
       btn.textContent = 'Batch 1 Run Complete';
       loadProductsFromFirestore();
       loadSuppliers();
@@ -1591,7 +1602,7 @@
     }catch(err){
       resultBox.innerHTML = '<strong>Import failed before writing:</strong> ' + err.message;
       btn.disabled = false;
-      btn.textContent = 'Import Batch 1 — 44 Fully-Priced SKUs (Bags, Home Textiles, Fragrance, Packaging, Skincare)';
+      btn.textContent = 'Import Batch 1 — 45 SKUs (5 already live, 40 new)';
     }
   }
 
