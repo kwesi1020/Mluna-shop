@@ -192,6 +192,8 @@
   .import-result-box strong{ display:block; margin-bottom:6px; }
   .stockunverified-tag{ font-size:0.62rem; text-transform:uppercase; letter-spacing:0.05em; font-weight:700; padding:3px 8px; border-radius:100px; display:inline-block; margin-left:6px; vertical-align:middle; background:#f0e3c0; color:#7a5c00; }
   .auditnote-tag{ font-size:0.62rem; text-transform:uppercase; letter-spacing:0.05em; font-weight:700; padding:3px 8px; border-radius:100px; display:inline-block; margin-left:6px; vertical-align:middle; background:#dcd3c2; color:#4a4030; cursor:help; }
+  .test-btn{ border:1px solid var(--sage); color:var(--sage); background:transparent; padding:11px 20px; border-radius:100px; font-weight:600; font-size:0.82rem; cursor:pointer; }
+  .test-btn:hover{ background:var(--sage); color:#fff; }
 
   @media (max-width: 640px){ .form-grid{ grid-template-columns:1fr; } }
 </style>
@@ -329,8 +331,17 @@
       <p style="font-size:0.85rem; color:rgba(23,20,18,0.6); margin-bottom:18px;">Controlled, Commander-approved imports from the Mluna Enterprise workbook audit. Each batch is a one-time import — running a batch twice will not create duplicates.</p>
       <button id="importBatchBtn" class="submit-btn" onclick="importApprovedTestBatch()">Import Approved Test Batch (5 Neutriherbs SKUs)</button>
       <div id="importResultBox" class="import-result-box" style="display:none;"></div>
-      <button id="importBatch1Btn" class="submit-btn" onclick="importBatch1()" style="margin-top:14px;">Import Batch 1 — 45 SKUs (5 already live, 40 new)</button>
-      <p style="font-size:0.74rem; color:rgba(23,20,18,0.45); margin-top:8px;">Batch 1 target: 45 SKUs total, all fully resolved. 5 (ML-MSK-001–005) are already live from the earlier test import and will be safely skipped, not recreated. The remaining 40 import with real, Commander-verified stock and pricing: 25 Bags/Home Textiles/Fragrance sets/Packaging/Diffusers/Candles now carry confirmed Qty in Stock and Reorder Level from the native Inventory sheet; ML-HC-001 carries its product cost (GHC 18.91) and PO cost (GHC 7.71) as two separate fields; the 14 Reed Diffuser (RD) items import with quantity 0 / incoming 2 (goods not yet physically received) even though the workbook's own Qty in Stock cell shows 2 — this discrepancy is preserved as an audit note on each RD product rather than silently resolved.</p>
+
+      <div style="margin-top:24px; padding-top:20px; border-top:1px dashed var(--line);">
+        <h3 style="font-size:1rem; margin-bottom:8px;">Preflight — Offline Checks &amp; Single-SKU Test</h3>
+        <p style="font-size:0.78rem; color:rgba(23,20,18,0.55); margin-bottom:12px;">Run these before the full Batch 1 import. Neither writes to Firestore except the single-SKU test, which only ever touches ML-TWL-003 and its linked PO/supplier.</p>
+        <button class="test-btn" onclick="runBatch1OfflineChecks()">Run Offline Static Checks (no writes)</button>
+        <button class="test-btn" onclick="importSingleSkuTest()" style="margin-left:10px;">Run Single-SKU Test — ML-TWL-003 Only</button>
+        <div id="preflightResultBox" class="import-result-box" style="display:none;"></div>
+      </div>
+
+      <button id="importBatch1Btn" class="submit-btn" onclick="importBatch1()" style="margin-top:24px;">Import Batch 1 — 40 New SKUs (5 already live, skipped automatically)</button>
+      <p style="font-size:0.74rem; color:rgba(23,20,18,0.45); margin-top:8px;">Batch 1 target: 40 SKUs in the import list. 5 (ML-MSK-001–005) are already live from the earlier test import and are not part of this list at all — they're excluded by design, not detected-and-skipped. Every target SKU now also recovers a missing linked PO on retry, even if its product already exists from a prior partial run. ML-HC-001 carries its product cost (GHC 18.91) and PO cost (GHC 7.71) as two separate fields. The 14 Reed Diffuser (RD) items import with quantity 0 / incoming 2 — the workbook's own Qty in Stock cell shows 2, but this is preserved as an audit note rather than used directly, since the Notes column states the goods are not yet physically received.</p>
       <div id="importBatch1ResultBox" class="import-result-box" style="display:none;"></div>
     </div>
 
@@ -1414,17 +1425,14 @@
     }
   }
 
-  // ===== Workbook Import — Batch 1: 45-SKU scope, fully resolved =====
-  // 5 SKUs (ML-MSK-001–005) already live from the test batch above — skipped, never recreated.
+  // ===== Workbook Import — Batch 1: 40-SKU scope, fully resolved =====
+  // ML-MSK-001–005 already live from the test batch above — NOT part of this list at all,
+  // by design, so there is nothing to "find and skip" on every run; they simply aren't targets.
   // 14 RD items: workbook's own "Qty in Stock" field shows 2, but the Notes column explicitly
-  // states goods are "not yet available, awaiting shipment." Per Commander instruction, the
-  // operational quantity is set to 0 (physical, nothing to sell yet) with incomingStock 2,
-  // and this exact discrepancy is preserved verbatim as an auditNote on each RD product —
-  // never silently resolved in either direction.
+  // states goods are "not yet available, awaiting shipment." Operational quantity is set to 0
+  // (physical, nothing to sell yet) with incomingStock 2, and this exact discrepancy is
+  // preserved verbatim as an auditNote on each RD product — never silently resolved.
   // ML-HC-001: product cost (18.91) and PO cost (7.71) stored as two separate fields.
-  // 25 Bags/Home Textiles/Fragrance/Packaging/Diffuser/Candle SKUs: quantity and reorderLevel
-  // now carry the exact Commander-verified native values, stockVerified true, prices preserved
-  // exactly as previously recorded (not recalculated).
   const BATCH1_ID = 'workbook-batch1-44skus';
   const RD_STOCK_AUDIT_NOTE = 'Workbook "Qty in Stock" field shows 2, but the Notes column states goods are not yet available / awaiting shipment. Operational treatment: quantity=0 (physical), incomingStock=2, to avoid overselling unreceived stock.';
   const BATCH1_SUPPLIERS = [
@@ -1479,6 +1487,115 @@
     { sku:"ML-RD-014", n:"Yara Home Reed Diffuser - Baby Pink (120ml)", category:"gifts", note:"Arabic-inspired reed diffuser, baby pink & silver packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, stockVerified:true, reorderLevel:5, auditNote:RD_STOCK_AUDIT_NOTE, poNumber:"ML-PO-059", poDate:"2026-09-03", supplierKey:"danding" }
   ];
 
+  // Single, shared per-item resolver used by BOTH the full Batch 1 import and the
+  // single-SKU test. Handles product-only-exists, PO-only-missing, and both-missing
+  // cases independently, so a retry after a partial failure recovers whatever is
+  // still missing without ever touching a record that's already correct.
+  async function resolveBatch1Item(item, supplierIdByKey){
+    const productRef = db.collection('products').doc(item.sku);
+    let productExists = false;
+    let productDoc = null;
+
+    const skuFieldSnap = await db.collection('products').where('sku','==',item.sku).limit(1).get();
+    if(!skuFieldSnap.empty){
+      productExists = true;
+      productDoc = skuFieldSnap.docs[0];
+    } else {
+      const byId = await productRef.get();
+      if(byId.exists){ productExists = true; productDoc = byId; }
+    }
+
+    if(productExists){
+      const existingName = (productDoc.data() || {}).n || '';
+      if(existingName !== item.n){
+        return {sku:item.sku, n:item.n, action:'conflict', existingName, existingDocId:productDoc.id};
+      }
+    } else {
+      try{
+        const supplierId = supplierIdByKey[item.supplierKey];
+        const productData = {
+          category: item.category, n: item.n, note: item.note,
+          price: item.price, old: item.old, costPrice: item.costPrice, isFreeGift: false,
+          wholesalePrice: item.wholesalePrice,
+          landedCost: (item.landedCost !== undefined && item.landedCost !== null) ? item.landedCost : null,
+          poUnitCost: (item.poUnitCost !== undefined && item.poUnitCost !== null) ? item.poUnitCost : null,
+          images: [], variants: [], optionGroups: [], comboStock: {},
+          status: item.stockVerified ? 'in_stock' : 'coming_soon',
+          quantity: item.quantity,
+          sku: item.sku, reorderLevel: item.reorderLevel, incomingStock: item.incomingStock || 0,
+          stockVerified: !!item.stockVerified,
+          auditNote: item.auditNote || null,
+          supplierRef: supplierId || null, priceStatus: 'priced',
+          importedFromWorkbook: true, importBatchId: BATCH1_ID,
+          archived: false, sortOrder: Date.now()
+        };
+        await productRef.set(productData);
+      }catch(err){
+        return {sku:item.sku, n:item.n, action:'failed', stage:'product', error:err.message};
+      }
+    }
+
+    try{
+      const poRef = db.collection('purchaseOrders').doc(item.poNumber);
+      const poSnap = await poRef.get();
+      if(poSnap.exists){
+        const poData = poSnap.data() || {};
+        if(poData.sku !== item.sku || poData.productRef !== item.sku){
+          return {sku:item.sku, n:item.n, action:'po_conflict', poNumber:item.poNumber, existingPoSku:poData.sku};
+        }
+        return {sku:item.sku, n:item.n, action: productExists ? 'skipped' : 'created', poStatus:'already_present'};
+      } else {
+        const supplierId = supplierIdByKey[item.supplierKey];
+        const poUnitCostForRecord = (item.poUnitCost !== undefined && item.poUnitCost !== null) ? item.poUnitCost : item.costPrice;
+        const poData = {
+          poNumber: item.poNumber,
+          date: new Date(item.poDate).getTime(),
+          supplierRef: supplierId || null,
+          supplierName: BATCH1_SUPPLIERS.find(s => s.key === item.supplierKey).name,
+          sku: item.sku, productName: item.n, productRef: item.sku,
+          qty: (item.quantity || 0) + (item.incomingStock || 0),
+          unitCost: poUnitCostForRecord,
+          totalCost: poUnitCostForRecord * ((item.quantity || 0) + (item.incomingStock || 0)),
+          paymentStatus: 'paid',
+          orderStatus: item.incomingStock ? 'processing' : 'unknown',
+          warehouseArrivalDate: null,
+          notes: 'Imported from workbook audit — Batch 1 (' + BATCH1_ID + ')' + (item.auditNote ? ' — ' + item.auditNote : ''),
+          excludeFromInventory: false,
+          dateValidationStatus: 'unknown', dateValidationNote: '',
+          importBatchId: BATCH1_ID, createdAt: Date.now()
+        };
+        await poRef.set(poData);
+        return {sku:item.sku, n:item.n, action: productExists ? 'po_recovered' : 'created', poStatus:'created'};
+      }
+    }catch(err){
+      return {sku:item.sku, n:item.n, action:'failed', stage:'po', error:err.message};
+    }
+  }
+
+  async function setUpBatch1Suppliers(suppliersToSetUp){
+    const supplierIdByKey = {};
+    const supplierReport = [];
+    for(const sup of suppliersToSetUp){
+      const supSnap = await db.collection('suppliers').where('name','==',sup.name).limit(1).get();
+      if(!supSnap.empty){
+        supplierIdByKey[sup.key] = supSnap.docs[0].id;
+        supplierReport.push(sup.name + ' — reused existing');
+      } else {
+        try{
+          const supRef = await db.collection('suppliers').add({
+            name: sup.name, platform: sup.platform, phone: sup.phone,
+            categorySupplied: sup.categorySupplied, notes: sup.notes, createdAt: Date.now()
+          });
+          supplierIdByKey[sup.key] = supRef.id;
+          supplierReport.push(sup.name + ' — created');
+        }catch(supErr){
+          supplierReport.push(sup.name + ' — FAILED: ' + supErr.message);
+        }
+      }
+    }
+    return {supplierIdByKey, supplierReport};
+  }
+
   async function importBatch1(){
     if(!db){ alert('Firebase isn\'t connected yet.'); return; }
     const btn = document.getElementById('importBatch1Btn');
@@ -1486,137 +1603,129 @@
     resultBox.style.display = 'block';
     btn.disabled = true;
 
-    const eligible = [];
-    const skipped = [];
-    const conflicting = [];
-    const failed = [];
-
     try{
-      btn.textContent = 'Checking each of the 45 target SKUs...';
-      for(const item of BATCH1_SKUS){
-        const skuSnap = await db.collection('products').where('sku','==',item.sku).limit(1).get();
-        if(skuSnap.empty){
-          eligible.push(item);
-          continue;
-        }
-        const existingDoc = skuSnap.docs[0];
-        const existingName = existingDoc.data().n || '';
-        if(existingName === item.n){
-          skipped.push({sku:item.sku, n:item.n, reason:'Already exists with matching name — left untouched.'});
-        } else {
-          conflicting.push({sku:item.sku, expectedName:item.n, existingName:existingName, existingDocId:existingDoc.id});
-        }
-      }
-
-      if(eligible.length === 0){
-        resultBox.innerHTML = '<strong>Nothing to import.</strong><br>' +
-          'Skipped (already present, untouched): ' + skipped.length + '<br>' +
-          'Conflicting (different product under same SKU — needs manual review): ' + conflicting.length +
-          (conflicting.length ? '<br>' + conflicting.map(c => c.sku + ' — expected "' + c.expectedName + '" but found "' + c.existingName + '" (doc ' + c.existingDocId + ')').join('<br>') : '');
-        btn.disabled = false;
-        btn.textContent = 'Import Batch 1 — 45 SKUs (5 already live, 40 new)';
-        return;
-      }
-
       btn.textContent = 'Setting up suppliers (reusing existing where possible)...';
-      const supplierIdByKey = {};
-      const supplierReport = [];
-      for(const sup of BATCH1_SUPPLIERS){
-        const supSnap = await db.collection('suppliers').where('name','==',sup.name).limit(1).get();
-        if(!supSnap.empty){
-          supplierIdByKey[sup.key] = supSnap.docs[0].id;
-          supplierReport.push(sup.name + ' — reused existing');
-        } else {
-          try{
-            const supRef = await db.collection('suppliers').add({
-              name: sup.name, platform: sup.platform, phone: sup.phone,
-              categorySupplied: sup.categorySupplied, notes: sup.notes, createdAt: Date.now()
-            });
-            supplierIdByKey[sup.key] = supRef.id;
-            supplierReport.push(sup.name + ' — created');
-          }catch(supErr){
-            supplierReport.push(sup.name + ' — FAILED: ' + supErr.message);
-          }
-        }
-      }
+      const {supplierIdByKey, supplierReport} = await setUpBatch1Suppliers(BATCH1_SUPPLIERS);
 
-      let createdCount = 0;
-      const createdLines = [];
-      for(const item of eligible){
-        btn.textContent = 'Importing ' + item.sku + ' (' + (createdCount+1) + ' of ' + eligible.length + ')...';
-        const supplierId = supplierIdByKey[item.supplierKey];
-        try{
-          const productRef = db.collection('products').doc(item.sku);
-          const alreadyThere = await productRef.get();
-          if(alreadyThere.exists){
-            skipped.push({sku:item.sku, n:item.n, reason:'Deterministic ID already present (safe retry) — left untouched.'});
-            continue;
-          }
-
-          const productData = {
-            category: item.category, n: item.n, note: item.note,
-            price: item.price, old: item.old, costPrice: item.costPrice, isFreeGift: false,
-            wholesalePrice: item.wholesalePrice,
-            landedCost: (item.landedCost !== undefined && item.landedCost !== null) ? item.landedCost : null,
-            poUnitCost: (item.poUnitCost !== undefined && item.poUnitCost !== null) ? item.poUnitCost : null,
-            images: [], variants: [], optionGroups: [], comboStock: {},
-            status: item.stockVerified ? 'in_stock' : 'coming_soon',
-            quantity: item.quantity,
-            sku: item.sku, reorderLevel: item.reorderLevel, incomingStock: item.incomingStock || 0,
-            stockVerified: !!item.stockVerified,
-            auditNote: item.auditNote || null,
-            supplierRef: supplierId || null, priceStatus: 'priced',
-            importedFromWorkbook: true, importBatchId: BATCH1_ID,
-            archived: false, sortOrder: Date.now()
-          };
-          await productRef.set(productData);
-
-          const poRef = db.collection('purchaseOrders').doc(item.poNumber);
-          const poAlreadyThere = await poRef.get();
-          if(!poAlreadyThere.exists){
-            const poUnitCostForRecord = (item.poUnitCost !== undefined && item.poUnitCost !== null) ? item.poUnitCost : item.costPrice;
-            const poData = {
-              poNumber: item.poNumber,
-              date: new Date(item.poDate).getTime(),
-              supplierRef: supplierId || null,
-              supplierName: BATCH1_SUPPLIERS.find(s => s.key === item.supplierKey).name,
-              sku: item.sku, productName: item.n, productRef: item.sku,
-              qty: (item.quantity || 0) + (item.incomingStock || 0),
-              unitCost: poUnitCostForRecord,
-              totalCost: poUnitCostForRecord * ((item.quantity || 0) + (item.incomingStock || 0)),
-              paymentStatus: 'paid',
-              orderStatus: item.incomingStock ? 'processing' : 'unknown',
-              warehouseArrivalDate: null,
-              notes: 'Imported from workbook audit — Batch 1 (' + BATCH1_ID + ')' + (item.auditNote ? ' — ' + item.auditNote : ''),
-              excludeFromInventory: false,
-              dateValidationStatus: 'unknown', dateValidationNote: '',
-              importBatchId: BATCH1_ID, createdAt: Date.now()
-            };
-            await poRef.set(poData);
-          }
-
-          createdCount++;
-          createdLines.push(item.sku + ' — ' + item.n);
-        }catch(itemErr){
-          failed.push({sku:item.sku, n:item.n, error:itemErr.message});
-        }
+      const created = [], poRecovered = [], skipped = [], conflicts = [], poConflicts = [], failed = [];
+      for(let idx = 0; idx < BATCH1_SKUS.length; idx++){
+        const item = BATCH1_SKUS[idx];
+        btn.textContent = 'Processing ' + item.sku + ' (' + (idx+1) + ' of ' + BATCH1_SKUS.length + ')...';
+        const result = await resolveBatch1Item(item, supplierIdByKey);
+        if(result.action === 'created') created.push(result);
+        else if(result.action === 'po_recovered') poRecovered.push(result);
+        else if(result.action === 'skipped') skipped.push(result);
+        else if(result.action === 'conflict') conflicts.push(result);
+        else if(result.action === 'po_conflict') poConflicts.push(result);
+        else if(result.action === 'failed') failed.push(result);
       }
 
       resultBox.innerHTML =
-        '<strong>Batch 1 result: ' + createdCount + ' created, ' + skipped.length + ' skipped, ' + conflicting.length + ' conflicting, ' + failed.length + ' failed.</strong><br><br>' +
+        '<strong>Batch 1 result — ' + created.length + ' created, ' + poRecovered.length + ' PO-recovered, ' +
+        skipped.length + ' skipped (already complete), ' + conflicts.length + ' product conflicts, ' +
+        poConflicts.length + ' PO conflicts, ' + failed.length + ' failed.</strong><br><br>' +
         '<strong>Suppliers:</strong><br>' + supplierReport.join('<br>') + '<br><br>' +
-        (createdCount ? '<strong>Created:</strong><br>' + createdLines.join('<br>') + '<br><br>' : '') +
-        (skipped.length ? '<strong>Skipped (already existed, untouched):</strong><br>' + skipped.map(s => s.sku + ' — ' + s.n + ' — ' + s.reason).join('<br>') + '<br><br>' : '') +
-        (conflicting.length ? '<strong>Conflicting (manual review needed, nothing written):</strong><br>' + conflicting.map(c => c.sku + ' — expected "' + c.expectedName + '" but existing doc ' + c.existingDocId + ' has name "' + c.existingName + '"').join('<br>') + '<br><br>' : '') +
-        (failed.length ? '<strong>Failed (not written, retry later):</strong><br>' + failed.map(f => f.sku + ' — ' + f.n + ' — ' + f.error).join('<br>') : '');
+        (created.length ? '<strong>Created (product + PO):</strong><br>' + created.map(r => r.sku + ' — ' + r.n).join('<br>') + '<br><br>' : '') +
+        (poRecovered.length ? '<strong>PO recovered (product already existed, missing PO created):</strong><br>' + poRecovered.map(r => r.sku + ' — ' + r.n).join('<br>') + '<br><br>' : '') +
+        (skipped.length ? '<strong>Skipped (product + PO both already correct, untouched):</strong><br>' + skipped.map(r => r.sku + ' — ' + r.n).join('<br>') + '<br><br>' : '') +
+        (conflicts.length ? '<strong>Product conflicts (manual review needed, nothing written):</strong><br>' + conflicts.map(r => r.sku + ' — expected "' + r.n + '" but found "' + r.existingName + '" (doc ' + r.existingDocId + ')').join('<br>') + '<br><br>' : '') +
+        (poConflicts.length ? '<strong>PO conflicts (PO number already used by a different SKU — manual review needed):</strong><br>' + poConflicts.map(r => r.poNumber + ' — expected SKU ' + r.sku + ' but PO is linked to "' + r.existingPoSku + '"').join('<br>') + '<br><br>' : '') +
+        (failed.length ? '<strong>Failed (not written, safe to retry):</strong><br>' + failed.map(r => r.sku + ' — ' + r.n + ' — [' + r.stage + '] ' + r.error).join('<br>') : '');
       btn.textContent = 'Batch 1 Run Complete';
       loadProductsFromFirestore();
       loadSuppliers();
       loadPurchaseOrders();
     }catch(err){
-      resultBox.innerHTML = '<strong>Import failed before writing:</strong> ' + err.message;
+      resultBox.innerHTML = '<strong>Import failed before completing:</strong> ' + err.message;
+    }finally{
       btn.disabled = false;
-      btn.textContent = 'Import Batch 1 — 45 SKUs (5 already live, 40 new)';
+      btn.textContent = 'Import Batch 1 — 40 New SKUs (5 already live, skipped automatically)';
+    }
+  }
+
+  // ===== Preflight: offline static checks (no Firestore calls at all) =====
+  function runBatch1OfflineChecks(){
+    const box = document.getElementById('preflightResultBox');
+    box.style.display = 'block';
+    const lines = [];
+    let pass = true;
+
+    if(BATCH1_SKUS.length === 40){ lines.push('✓ BATCH1_SKUS has exactly 40 entries.'); }
+    else { pass = false; lines.push('✗ BATCH1_SKUS has ' + BATCH1_SKUS.length + ' entries, expected 40.'); }
+
+    const skuSet = new Set(BATCH1_SKUS.map(i => i.sku));
+    if(skuSet.size === BATCH1_SKUS.length){ lines.push('✓ All SKUs in BATCH1_SKUS are unique.'); }
+    else { pass = false; lines.push('✗ Duplicate SKU(s) found in BATCH1_SKUS.'); }
+
+    const poSet = new Set(BATCH1_SKUS.map(i => i.poNumber));
+    if(poSet.size === BATCH1_SKUS.length){ lines.push('✓ All PO numbers in BATCH1_SKUS are unique.'); }
+    else { pass = false; lines.push('✗ Duplicate PO number(s) found in BATCH1_SKUS.'); }
+
+    const supplierKeys = new Set(BATCH1_SUPPLIERS.map(s => s.key));
+    const badSupplierKeys = BATCH1_SKUS.filter(i => !supplierKeys.has(i.supplierKey)).map(i => i.sku);
+    if(badSupplierKeys.length === 0){ lines.push('✓ Every item\\'s supplierKey resolves to a defined supplier.'); }
+    else { pass = false; lines.push('✗ Unresolved supplierKey on: ' + badSupplierKeys.join(', ')); }
+
+    const hc = BATCH1_SKUS.find(i => i.sku === 'ML-HC-001');
+    if(hc && hc.costPrice === 18.91 && hc.poUnitCost === 7.71 && hc.costPrice !== hc.poUnitCost){
+      lines.push('✓ ML-HC-001 has distinct product cost (18.91) and PO cost (7.71).');
+    } else { pass = false; lines.push('✗ ML-HC-001 cost fields are missing or not distinct as expected.'); }
+
+    const rdItems = BATCH1_SKUS.filter(i => i.sku.startsWith('ML-RD-'));
+    const rdBad = rdItems.filter(i => i.quantity !== 0 || i.incomingStock !== 2 || !i.auditNote);
+    if(rdItems.length === 14 && rdBad.length === 0){
+      lines.push('✓ All 14 RD items have quantity 0, incomingStock 2, and an auditNote.');
+    } else { pass = false; lines.push('✗ RD item check failed — ' + rdItems.length + ' found, ' + rdBad.length + ' with missing/incorrect fields.'); }
+
+    const twl3 = BATCH1_SKUS.find(i => i.sku === 'ML-TWL-003');
+    if(twl3 && twl3.poNumber === 'ML-PO-007' && twl3.supplierKey === 'jinzhou' && twl3.quantity === 1 && twl3.reorderLevel === 5 && twl3.costPrice === 37.17 && twl3.wholesalePrice === 56 && twl3.price === 74){
+      lines.push('✓ ML-TWL-003 matches the Commander-confirmed single-SKU test allowlist values exactly.');
+    } else { pass = false; lines.push('✗ ML-TWL-003 does not match the expected allowlist values.'); }
+
+    box.innerHTML = '<strong>' + (pass ? 'All offline checks passed.' : 'One or more offline checks FAILED — see below.') + '</strong><br>' + lines.join('<br>');
+  }
+
+  // ===== Preflight: single-SKU live test, strictly allowlisted to ML-TWL-003 =====
+  const SINGLE_SKU_TEST_ALLOWLIST = ['ML-TWL-003'];
+  async function importSingleSkuTest(){
+    if(!db){ alert('Firebase isn\'t connected yet.'); return; }
+    const box = document.getElementById('preflightResultBox');
+    box.style.display = 'block';
+
+    const targets = BATCH1_SKUS.filter(i => SINGLE_SKU_TEST_ALLOWLIST.includes(i.sku));
+    if(targets.length !== 1 || targets[0].sku !== 'ML-TWL-003'){
+      box.innerHTML = '<strong>Test aborted — allowlist validation failed.</strong> Expected exactly one match for ML-TWL-003, found ' + targets.length + '. No Firestore calls were made.';
+      return;
+    }
+    const item = targets[0];
+    const expected = {poNumber:'ML-PO-007', supplierKey:'jinzhou', quantity:1, reorderLevel:5, costPrice:37.17, wholesalePrice:56, price:74};
+    const mismatches = Object.keys(expected).filter(k => item[k] !== expected[k]);
+    if(mismatches.length){
+      box.innerHTML = '<strong>Test aborted — ML-TWL-003 field mismatch on: ' + mismatches.join(', ') + '.</strong> No Firestore calls were made. Fix BATCH1_SKUS before retrying.';
+      return;
+    }
+
+    box.innerHTML = '<strong>Allowlist verified — running live single-SKU test for ML-TWL-003 only.</strong>';
+    try{
+      const supplierDef = BATCH1_SUPPLIERS.find(s => s.key === 'jinzhou');
+      const {supplierIdByKey, supplierReport} = await setUpBatch1Suppliers([supplierDef]);
+      const result = await resolveBatch1Item(item, supplierIdByKey);
+
+      let outcome;
+      if(result.action === 'created') outcome = 'Created — new product doc "ML-TWL-003" and new PO doc "ML-PO-007".';
+      else if(result.action === 'po_recovered') outcome = 'PO recovered — product "ML-TWL-003" already existed and matched; missing PO "ML-PO-007" was created.';
+      else if(result.action === 'skipped') outcome = 'Skipped — both product "ML-TWL-003" and PO "ML-PO-007" already existed and matched. Nothing written.';
+      else if(result.action === 'conflict') outcome = 'CONFLICT — a product with SKU ML-TWL-003 already exists under the name "' + result.existingName + '" (doc ' + result.existingDocId + '). Nothing written.';
+      else if(result.action === 'po_conflict') outcome = 'PO CONFLICT — PO "ML-PO-007" already exists but is linked to a different SKU ("' + result.existingPoSku + '"). Nothing written.';
+      else outcome = 'FAILED at stage "' + result.stage + '": ' + result.error;
+
+      box.innerHTML = '<strong>Single-SKU test result:</strong><br>' + outcome + '<br><br><strong>Supplier:</strong><br>' + supplierReport.join('<br>') +
+        '<br><br>Verify manually: product doc ID "ML-TWL-003" (price 74, wholesale 56, cost 37.17, quantity 1, reorderLevel 5, supplierRef linked to Jinzhou Wangdihao Towel Factory) and PO doc ID "ML-PO-007" (sku ML-TWL-003, qty 1, unitCost 37.17). Also check the live storefront shows this item In Stock at GHC 74.00.';
+      loadProductsFromFirestore();
+      loadSuppliers();
+      loadPurchaseOrders();
+    }catch(err){
+      box.innerHTML = '<strong>Single-SKU test failed:</strong> ' + err.message;
     }
   }
 
