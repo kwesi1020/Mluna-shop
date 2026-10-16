@@ -192,7 +192,7 @@
   .import-result-box strong{ display:block; margin-bottom:6px; }
   .stockunverified-tag{ font-size:0.62rem; text-transform:uppercase; letter-spacing:0.05em; font-weight:700; padding:3px 8px; border-radius:100px; display:inline-block; margin-left:6px; vertical-align:middle; background:#f0e3c0; color:#7a5c00; }
   .auditnote-tag{ font-size:0.62rem; text-transform:uppercase; letter-spacing:0.05em; font-weight:700; padding:3px 8px; border-radius:100px; display:inline-block; margin-left:6px; vertical-align:middle; background:#dcd3c2; color:#4a4030; cursor:help; }
-  .test-btn{ border:1px solid var(--sage); color:var(--sage); background:transparent; padding:11px 20px; border-radius:100px; font-weight:600; font-size:0.82rem; cursor:pointer; }
+  .test-btn{ border:1px solid var(--sage); color:var(--sage); background:transparent; padding:11px 20px; border-radius:100px; font-weight:600; font-size:0.82rem; cursor:pointer; margin-bottom:8px; }
   .test-btn:hover{ background:var(--sage); color:#fff; }
 
   @media (max-width: 640px){ .form-grid{ grid-template-columns:1fr; } }
@@ -333,15 +333,16 @@
       <div id="importResultBox" class="import-result-box" style="display:none;"></div>
 
       <div style="margin-top:24px; padding-top:20px; border-top:1px dashed var(--line);">
-        <h3 style="font-size:1rem; margin-bottom:8px;">Preflight — Offline Checks &amp; Single-SKU Test</h3>
-        <p style="font-size:0.78rem; color:rgba(23,20,18,0.55); margin-bottom:12px;">Run these before the full Batch 1 import. Neither writes to Firestore except the single-SKU test, which only ever touches ML-TWL-003 and its linked PO/supplier.</p>
-        <button class="test-btn" onclick="runBatch1OfflineChecks()">Run Offline Static Checks (no writes)</button>
-        <button class="test-btn" onclick="importSingleSkuTest()" style="margin-left:10px;">Run Single-SKU Test — ML-TWL-003 Only</button>
+        <h3 style="font-size:1rem; margin-bottom:8px;">Preflight — Offline Checks, Mock Tests &amp; Single-SKU Preflight</h3>
+        <p style="font-size:0.78rem; color:rgba(23,20,18,0.55); margin-bottom:12px;">None of these three buttons write to Firestore. The single-SKU button only ever runs a read-only preflight for ML-TWL-003 and reports what WOULD happen — it stops short of writing, pending separate authorization.</p>
+        <button class="test-btn" onclick="runBatch1OfflineChecks()">Run Offline Static Checks (source-data only, no Firestore)</button><br>
+        <button class="test-btn" onclick="runBatch1PreflightMockTests()">Run Mock-Firestore Preflight Tests (executable, in-memory, no live Firestore)</button><br>
+        <button class="test-btn" onclick="importSingleSkuTest()">Run Single-SKU PREFLIGHT ONLY — ML-TWL-003 (no writes)</button>
         <div id="preflightResultBox" class="import-result-box" style="display:none;"></div>
       </div>
 
       <button id="importBatch1Btn" class="submit-btn" onclick="importBatch1()" style="margin-top:24px;">Import Batch 1 — 40 New SKUs (5 already live, skipped automatically)</button>
-      <p style="font-size:0.74rem; color:rgba(23,20,18,0.45); margin-top:8px;">Batch 1 target: 40 SKUs in the import list. 5 (ML-MSK-001–005) are already live from the earlier test import and are not part of this list at all — they're excluded by design, not detected-and-skipped. Every target SKU now also recovers a missing linked PO on retry, even if its product already exists from a prior partial run. ML-HC-001 carries its product cost (GHC 18.91) and PO cost (GHC 7.71) as two separate fields. The 14 Reed Diffuser (RD) items import with quantity 0 / incoming 2 — the workbook's own Qty in Stock cell shows 2, but this is preserved as an audit note rather than used directly, since the Notes column states the goods are not yet physically received.</p>
+      <p style="font-size:0.74rem; color:rgba(23,20,18,0.45); margin-top:8px;">Batch 1 now runs a full read-only preflight across all 40 target SKUs first — nothing is written until every item has been checked. Suppliers are only created for items that pass preflight cleanly; a conflicting item causes zero writes for that item, including its supplier. ML-HC-001 carries its product cost (GHC 18.91) and PO cost (GHC 7.71) as two separate fields. The 14 Reed Diffuser (RD) items import with quantity 0 / incoming 2, preserved as an audit note rather than used directly.</p>
       <div id="importBatch1ResultBox" class="import-result-box" style="display:none;"></div>
     </div>
 
@@ -1426,13 +1427,6 @@
   }
 
   // ===== Workbook Import — Batch 1: 40-SKU scope, fully resolved =====
-  // ML-MSK-001–005 already live from the test batch above — NOT part of this list at all,
-  // by design, so there is nothing to "find and skip" on every run; they simply aren't targets.
-  // 14 RD items: workbook's own "Qty in Stock" field shows 2, but the Notes column explicitly
-  // states goods are "not yet available, awaiting shipment." Operational quantity is set to 0
-  // (physical, nothing to sell yet) with incomingStock 2, and this exact discrepancy is
-  // preserved verbatim as an auditNote on each RD product — never silently resolved.
-  // ML-HC-001: product cost (18.91) and PO cost (7.71) stored as two separate fields.
   const BATCH1_ID = 'workbook-batch1-44skus';
   const RD_STOCK_AUDIT_NOTE = 'Workbook "Qty in Stock" field shows 2, but the Notes column states goods are not yet available / awaiting shipment. Operational treatment: quantity=0 (physical), incomingStock=2, to avoid overselling unreceived stock.';
   const BATCH1_SUPPLIERS = [
@@ -1487,32 +1481,77 @@
     { sku:"ML-RD-014", n:"Yara Home Reed Diffuser - Baby Pink (120ml)", category:"gifts", note:"Arabic-inspired reed diffuser, baby pink & silver packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, stockVerified:true, reorderLevel:5, auditNote:RD_STOCK_AUDIT_NOTE, poNumber:"ML-PO-059", poDate:"2026-09-03", supplierKey:"danding" }
   ];
 
-  // Single, shared per-item resolver used by BOTH the full Batch 1 import and the
-  // single-SKU test. Handles product-only-exists, PO-only-missing, and both-missing
-  // cases independently, so a retry after a partial failure recovers whatever is
-  // still missing without ever touching a record that's already correct.
-  async function resolveBatch1Item(item, supplierIdByKey){
-    const productRef = db.collection('products').doc(item.sku);
-    let productExists = false;
-    let productDoc = null;
+  // ===== Phase 1C: read-only preflight, separate from any write =====
+  // preflightBatch1Item NEVER writes. It only reads, via the dbRef passed in — this lets
+  // the exact same function be exercised against a real Firestore `db` OR an in-memory
+  // mock (see runBatch1PreflightMockTests below) with zero duplicated logic.
+  //
+  // Fixes applied this phase:
+  //  1. resolvedProductDocId is the REAL doc id found (which may differ from item.sku if
+  //     a product was created some other way), never assumed to equal item.sku.
+  //  2. Duplicate SKU matches (more than one product doc sharing the same sku field) are
+  //     detected and reported as 'ambiguous' — fails closed, zero writes.
+  //  3. PO linkage is checked against the REAL resolvedProductDocId, not a presumed one —
+  //     so a PO pointing at the wrong product document is correctly caught as a conflict
+  //     even when its "sku" field looks right.
+  async function preflightBatch1Item(item, dbRef){
+    const skuQuerySnap = await dbRef.collection('products').where('sku','==',item.sku).get();
+    let productMatches = skuQuerySnap.docs.slice();
 
-    const skuFieldSnap = await db.collection('products').where('sku','==',item.sku).limit(1).get();
-    if(!skuFieldSnap.empty){
-      productExists = true;
-      productDoc = skuFieldSnap.docs[0];
-    } else {
-      const byId = await productRef.get();
-      if(byId.exists){ productExists = true; productDoc = byId; }
+    const deterministicDoc = await dbRef.collection('products').doc(item.sku).get();
+    if(deterministicDoc.exists && !productMatches.find(d => d.id === deterministicDoc.id)){
+      productMatches = productMatches.concat([deterministicDoc]);
     }
 
+    if(productMatches.length > 1){
+      return {sku:item.sku, n:item.n, ambiguous:true, matchIds: productMatches.map(d => d.id)};
+    }
+
+    const productExists = productMatches.length === 1;
+    const productDoc = productExists ? productMatches[0] : null;
+    let productConflict = false, productConflictInfo = null;
     if(productExists){
       const existingName = (productDoc.data() || {}).n || '';
       if(existingName !== item.n){
-        return {sku:item.sku, n:item.n, action:'conflict', existingName, existingDocId:productDoc.id};
+        productConflict = true;
+        productConflictInfo = {existingName, existingDocId: productDoc.id};
       }
-    } else {
-      try{
+    }
+    const resolvedProductDocId = productExists ? productDoc.id : item.sku;
+
+    const poDoc = await dbRef.collection('purchaseOrders').doc(item.poNumber).get();
+    const poExists = poDoc.exists;
+    let poConflict = false, poConflictInfo = null;
+    if(poExists){
+      const poData = poDoc.data() || {};
+      if(poData.sku !== item.sku || poData.productRef !== resolvedProductDocId){
+        poConflict = true;
+        poConflictInfo = {existingPoSku: poData.sku, existingProductRef: poData.productRef};
+      }
+    }
+
+    return {
+      sku:item.sku, n:item.n, ambiguous:false,
+      productExists, productConflict, productConflictInfo,
+      poExists, poConflict, poConflictInfo,
+      resolvedProductDocId
+    };
+  }
+
+  function batch1ItemHasBlockingIssue(plan){
+    return plan.ambiguous || plan.productConflict || plan.poConflict;
+  }
+
+  // commitBatch1Item performs the actual writes. It is ONLY ever called (by importBatch1)
+  // after preflightBatch1Item has already run clean for this item. It writes the product
+  // only if missing, then the PO only if missing — using plan.resolvedProductDocId for the
+  // PO's productRef, never item.sku directly, so the fix in point 1 actually takes effect
+  // at write time too, not just during the read-only check.
+  async function commitBatch1Item(item, plan, supplierIdByKey){
+    try{
+      if(!plan.productExists){
         const supplierId = supplierIdByKey[item.supplierKey];
+        const productRef = db.collection('products').doc(item.sku);
         const productData = {
           category: item.category, n: item.n, note: item.note,
           price: item.price, old: item.old, costPrice: item.costPrice, isFreeGift: false,
@@ -1530,29 +1569,22 @@
           archived: false, sortOrder: Date.now()
         };
         await productRef.set(productData);
-      }catch(err){
-        return {sku:item.sku, n:item.n, action:'failed', stage:'product', error:err.message};
       }
+    }catch(err){
+      return {sku:item.sku, n:item.n, action:'failed', stage:'product', error:err.message};
     }
 
     try{
-      const poRef = db.collection('purchaseOrders').doc(item.poNumber);
-      const poSnap = await poRef.get();
-      if(poSnap.exists){
-        const poData = poSnap.data() || {};
-        if(poData.sku !== item.sku || poData.productRef !== item.sku){
-          return {sku:item.sku, n:item.n, action:'po_conflict', poNumber:item.poNumber, existingPoSku:poData.sku};
-        }
-        return {sku:item.sku, n:item.n, action: productExists ? 'skipped' : 'created', poStatus:'already_present'};
-      } else {
+      if(!plan.poExists){
         const supplierId = supplierIdByKey[item.supplierKey];
         const poUnitCostForRecord = (item.poUnitCost !== undefined && item.poUnitCost !== null) ? item.poUnitCost : item.costPrice;
+        const poRef = db.collection('purchaseOrders').doc(item.poNumber);
         const poData = {
           poNumber: item.poNumber,
           date: new Date(item.poDate).getTime(),
           supplierRef: supplierId || null,
           supplierName: BATCH1_SUPPLIERS.find(s => s.key === item.supplierKey).name,
-          sku: item.sku, productName: item.n, productRef: item.sku,
+          sku: item.sku, productName: item.n, productRef: plan.resolvedProductDocId,
           qty: (item.quantity || 0) + (item.incomingStock || 0),
           unitCost: poUnitCostForRecord,
           totalCost: poUnitCostForRecord * ((item.quantity || 0) + (item.incomingStock || 0)),
@@ -1565,11 +1597,13 @@
           importBatchId: BATCH1_ID, createdAt: Date.now()
         };
         await poRef.set(poData);
-        return {sku:item.sku, n:item.n, action: productExists ? 'po_recovered' : 'created', poStatus:'created'};
       }
     }catch(err){
       return {sku:item.sku, n:item.n, action:'failed', stage:'po', error:err.message};
     }
+
+    const action = (!plan.productExists) ? 'created' : (!plan.poExists ? 'po_recovered' : 'skipped');
+    return {sku:item.sku, n:item.n, action};
   }
 
   async function setUpBatch1Suppliers(suppliersToSetUp){
@@ -1596,6 +1630,12 @@
     return {supplierIdByKey, supplierReport};
   }
 
+  // importBatch1: PRODUCT/PO/SUPPLIER ordering fix — runs a full read-only preflight
+  // across ALL 40 items FIRST (zero writes during this phase). Only after every item has
+  // been checked does it compute which suppliers are actually needed (only for items that
+  // passed preflight cleanly) and start writing. An item blocked at preflight causes zero
+  // writes for that item, and if no other clean item needs that same supplier, zero writes
+  // for that supplier too.
   async function importBatch1(){
     if(!db){ alert('Firebase isn\'t connected yet.'); return; }
     const btn = document.getElementById('importBatch1Btn');
@@ -1604,33 +1644,51 @@
     btn.disabled = true;
 
     try{
-      btn.textContent = 'Setting up suppliers (reusing existing where possible)...';
-      const {supplierIdByKey, supplierReport} = await setUpBatch1Suppliers(BATCH1_SUPPLIERS);
-
-      const created = [], poRecovered = [], skipped = [], conflicts = [], poConflicts = [], failed = [];
+      const plans = [];
       for(let idx = 0; idx < BATCH1_SKUS.length; idx++){
         const item = BATCH1_SKUS[idx];
-        btn.textContent = 'Processing ' + item.sku + ' (' + (idx+1) + ' of ' + BATCH1_SKUS.length + ')...';
-        const result = await resolveBatch1Item(item, supplierIdByKey);
+        btn.textContent = 'Preflight ' + item.sku + ' (' + (idx+1) + ' of ' + BATCH1_SKUS.length + ') — read-only, no writes yet...';
+        const plan = await preflightBatch1Item(item, db);
+        plans.push({item, plan});
+      }
+
+      const blocked = plans.filter(p => batch1ItemHasBlockingIssue(p.plan));
+      const clean = plans.filter(p => !batch1ItemHasBlockingIssue(p.plan));
+
+      const neededSupplierKeys = new Set(clean.map(p => p.item.supplierKey));
+      const suppliersToSetUp = BATCH1_SUPPLIERS.filter(s => neededSupplierKeys.has(s.key));
+      btn.textContent = 'Preflight complete. Setting up suppliers only for items with a clean preflight...';
+      const {supplierIdByKey, supplierReport} = suppliersToSetUp.length
+        ? await setUpBatch1Suppliers(suppliersToSetUp)
+        : {supplierIdByKey:{}, supplierReport:['No suppliers created — every item was blocked at preflight.']};
+
+      const created = [], poRecovered = [], skipped = [], failed = [];
+      for(let idx = 0; idx < clean.length; idx++){
+        const {item, plan} = clean[idx];
+        btn.textContent = 'Writing ' + item.sku + ' (' + (idx+1) + ' of ' + clean.length + ')...';
+        const result = await commitBatch1Item(item, plan, supplierIdByKey);
         if(result.action === 'created') created.push(result);
         else if(result.action === 'po_recovered') poRecovered.push(result);
         else if(result.action === 'skipped') skipped.push(result);
-        else if(result.action === 'conflict') conflicts.push(result);
-        else if(result.action === 'po_conflict') poConflicts.push(result);
         else if(result.action === 'failed') failed.push(result);
       }
 
+      const ambiguous = blocked.filter(p => p.plan.ambiguous).map(p => ({sku:p.item.sku, n:p.item.n, matchIds:p.plan.matchIds}));
+      const productConflicts = blocked.filter(p => !p.plan.ambiguous && p.plan.productConflict).map(p => ({sku:p.item.sku, n:p.item.n, existingName:p.plan.productConflictInfo.existingName, existingDocId:p.plan.productConflictInfo.existingDocId}));
+      const poConflicts = blocked.filter(p => !p.plan.ambiguous && !p.plan.productConflict && p.plan.poConflict).map(p => ({sku:p.item.sku, n:p.item.n, poNumber:p.item.poNumber, existingPoSku:p.plan.poConflictInfo.existingPoSku}));
+
       resultBox.innerHTML =
         '<strong>Batch 1 result — ' + created.length + ' created, ' + poRecovered.length + ' PO-recovered, ' +
-        skipped.length + ' skipped (already complete), ' + conflicts.length + ' product conflicts, ' +
-        poConflicts.length + ' PO conflicts, ' + failed.length + ' failed.</strong><br><br>' +
-        '<strong>Suppliers:</strong><br>' + supplierReport.join('<br>') + '<br><br>' +
+        skipped.length + ' skipped (already complete), ' + ambiguous.length + ' ambiguous, ' +
+        productConflicts.length + ' product conflicts, ' + poConflicts.length + ' PO conflicts, ' + failed.length + ' failed.</strong><br><br>' +
+        '<strong>Suppliers (only set up for items with a clean preflight):</strong><br>' + supplierReport.join('<br>') + '<br><br>' +
         (created.length ? '<strong>Created (product + PO):</strong><br>' + created.map(r => r.sku + ' — ' + r.n).join('<br>') + '<br><br>' : '') +
         (poRecovered.length ? '<strong>PO recovered (product already existed, missing PO created):</strong><br>' + poRecovered.map(r => r.sku + ' — ' + r.n).join('<br>') + '<br><br>' : '') +
-        (skipped.length ? '<strong>Skipped (product + PO both already correct, untouched):</strong><br>' + skipped.map(r => r.sku + ' — ' + r.n).join('<br>') + '<br><br>' : '') +
-        (conflicts.length ? '<strong>Product conflicts (manual review needed, nothing written):</strong><br>' + conflicts.map(r => r.sku + ' — expected "' + r.n + '" but found "' + r.existingName + '" (doc ' + r.existingDocId + ')').join('<br>') + '<br><br>' : '') +
-        (poConflicts.length ? '<strong>PO conflicts (PO number already used by a different SKU — manual review needed):</strong><br>' + poConflicts.map(r => r.poNumber + ' — expected SKU ' + r.sku + ' but PO is linked to "' + r.existingPoSku + '"').join('<br>') + '<br><br>' : '') +
-        (failed.length ? '<strong>Failed (not written, safe to retry):</strong><br>' + failed.map(r => r.sku + ' — ' + r.n + ' — [' + r.stage + '] ' + r.error).join('<br>') : '');
+        (skipped.length ? '<strong>Skipped (already correct, untouched):</strong><br>' + skipped.map(r => r.sku + ' — ' + r.n).join('<br>') + '<br><br>' : '') +
+        (ambiguous.length ? '<strong>Ambiguous (multiple product docs share this SKU — manual review needed, zero writes):</strong><br>' + ambiguous.map(r => r.sku + ' — doc IDs: ' + r.matchIds.join(', ')).join('<br>') + '<br><br>' : '') +
+        (productConflicts.length ? '<strong>Product conflicts (zero writes):</strong><br>' + productConflicts.map(r => r.sku + ' — expected "' + r.n + '" but found "' + r.existingName + '" (doc ' + r.existingDocId + ')').join('<br>') + '<br><br>' : '') +
+        (poConflicts.length ? '<strong>PO conflicts (zero writes):</strong><br>' + poConflicts.map(r => r.poNumber + ' — expected SKU ' + r.sku + ' but linked to "' + r.existingPoSku + '"').join('<br>') + '<br><br>' : '') +
+        (failed.length ? '<strong>Failed mid-write (retry-safe — rerun to recover):</strong><br>' + failed.map(r => r.sku + ' — ' + r.n + ' — [' + r.stage + '] ' + r.error).join('<br>') : '');
       btn.textContent = 'Batch 1 Run Complete';
       loadProductsFromFirestore();
       loadSuppliers();
@@ -1643,7 +1701,7 @@
     }
   }
 
-  // ===== Preflight: offline static checks (no Firestore calls at all) =====
+  // ===== Preflight: offline static checks on SOURCE DATA only (no Firestore calls) =====
   function runBatch1OfflineChecks(){
     const box = document.getElementById('preflightResultBox');
     box.style.display = 'block';
@@ -1682,10 +1740,105 @@
       lines.push('✓ ML-TWL-003 matches the Commander-confirmed single-SKU test allowlist values exactly.');
     } else { pass = false; lines.push('✗ ML-TWL-003 does not match the expected allowlist values.'); }
 
-    box.innerHTML = '<strong>' + (pass ? 'All offline checks passed.' : 'One or more offline checks FAILED — see below.') + '</strong><br>' + lines.join('<br>');
+    box.innerHTML = '<strong>' + (pass ? 'All offline source-data checks passed.' : 'One or more offline checks FAILED — see below.') + '</strong><br>' + lines.join('<br>');
   }
 
-  // ===== Preflight: single-SKU live test, strictly allowlisted to ML-TWL-003 =====
+  // ===== EXECUTABLE in-browser unit tests for preflightBatch1Item() against an in-memory
+  // mock Firestore. Zero real Firestore calls. This is genuinely runnable — tap the button —
+  // not a manually-traced claim. commitBatch1Item() itself (the real .set() write calls) is
+  // NOT exercised here, since it targets the live "db" by design and this phase forbids any
+  // live write; that function remains verified by code inspection only, explicitly labeled
+  // as such, not as an executed test. =====
+  function createMockDb(initialProducts, initialPOs){
+    const products = initialProducts.map(p => ({...p}));
+    const pos = initialPOs.map(p => ({...p}));
+    function makeDoc(arr, id){
+      return {
+        id,
+        async get(){
+          const found = arr.find(d => d.id === id);
+          return {exists: !!found, id, data: () => found ? {...found} : undefined};
+        }
+      };
+    }
+    function makeCollection(arr){
+      return {
+        where(field, op, value){
+          return { async get(){
+            return { docs: arr.filter(d => d[field] === value).map(d => ({id:d.id, data:()=>({...d})})) };
+          }};
+        },
+        doc(id){ return makeDoc(arr, id); }
+      };
+    }
+    return { collection(name){ return name === 'products' ? makeCollection(products) : makeCollection(pos); } };
+  }
+
+  async function runBatch1PreflightMockTests(){
+    const box = document.getElementById('preflightResultBox');
+    box.style.display = 'block';
+    const results = [];
+    const sampleItem = {sku:'ML-TEST-001', n:'Test Product', poNumber:'ML-PO-TEST'};
+
+    let mdb = createMockDb([], []);
+    let plan = await preflightBatch1Item(sampleItem, mdb);
+    results.push(['Neither product nor PO exists', !plan.ambiguous && !plan.productExists && !plan.poExists && !plan.productConflict && !plan.poConflict]);
+
+    mdb = createMockDb([{id:'ML-TEST-001', sku:'ML-TEST-001', n:'Test Product'}], []);
+    plan = await preflightBatch1Item(sampleItem, mdb);
+    results.push(['Product only exists (matching, deterministic ID)', plan.productExists && !plan.productConflict && !plan.poExists && plan.resolvedProductDocId === 'ML-TEST-001']);
+
+    mdb = createMockDb([{id:'randomAutoId123', sku:'ML-TEST-001', n:'Test Product'}], []);
+    plan = await preflightBatch1Item(sampleItem, mdb);
+    results.push(['Product exists under a NON-SKU document ID — resolvedProductDocId must be the real ID', plan.productExists && !plan.productConflict && plan.resolvedProductDocId === 'randomAutoId123']);
+
+    mdb = createMockDb([], [{id:'ML-PO-TEST', poNumber:'ML-PO-TEST', sku:'ML-TEST-001', productRef:'ML-TEST-001'}]);
+    plan = await preflightBatch1Item(sampleItem, mdb);
+    results.push(['PO only exists, correctly linked to the future deterministic product ID', plan.poExists && !plan.poConflict]);
+
+    mdb = createMockDb(
+      [{id:'ML-TEST-001', sku:'ML-TEST-001', n:'Test Product'}],
+      [{id:'ML-PO-TEST', poNumber:'ML-PO-TEST', sku:'ML-TEST-001', productRef:'ML-TEST-001'}]
+    );
+    plan = await preflightBatch1Item(sampleItem, mdb);
+    results.push(['Both product and PO exist and match', plan.productExists && plan.poExists && !plan.productConflict && !plan.poConflict]);
+
+    mdb = createMockDb([{id:'ML-TEST-001', sku:'ML-TEST-001', n:'Totally Different Product'}], []);
+    plan = await preflightBatch1Item(sampleItem, mdb);
+    results.push(['Product conflict detected (name mismatch)', plan.productConflict === true]);
+
+    mdb = createMockDb([], [{id:'ML-PO-TEST', poNumber:'ML-PO-TEST', sku:'ML-OTHER-999', productRef:'ML-OTHER-999'}]);
+    plan = await preflightBatch1Item(sampleItem, mdb);
+    results.push(['PO conflict detected (linked to an unrelated SKU)', plan.poConflict === true]);
+
+    mdb = createMockDb(
+      [{id:'randomAutoId123', sku:'ML-TEST-001', n:'Test Product'}],
+      [{id:'ML-PO-TEST', poNumber:'ML-PO-TEST', sku:'ML-TEST-001', productRef:'ML-TEST-001'}]
+    );
+    plan = await preflightBatch1Item(sampleItem, mdb);
+    results.push(['PO conflict detected when productRef points at the WRONG doc ID despite matching sku field (the core Phase 1B/1C fix)', plan.poConflict === true]);
+
+    mdb = createMockDb([
+      {id:'docA', sku:'ML-TEST-001', n:'Test Product'},
+      {id:'docB', sku:'ML-TEST-001', n:'Test Product'}
+    ], []);
+    plan = await preflightBatch1Item(sampleItem, mdb);
+    results.push(['Duplicate SKU matches flagged ambiguous, fails closed', plan.ambiguous === true]);
+
+    mdb = createMockDb([{id:'ML-TEST-001', sku:'ML-TEST-001', n:'Test Product'}], []);
+    plan = await preflightBatch1Item(sampleItem, mdb);
+    results.push(['Retry-recovery plan: product exists+matches, PO missing → plan correctly shows only PO needs creating', plan.productExists && !plan.poExists && !plan.productConflict && !plan.poConflict && !batch1ItemHasBlockingIssue(plan)]);
+
+    const allPass = results.every(r => r[1]);
+    box.innerHTML = '<strong>' + (allPass ? 'All 10 mock-Firestore preflight tests EXECUTED AND PASSED.' : 'One or more mock tests FAILED.') + '</strong><br>' +
+      results.map(r => (r[1] ? '✓ ' : '✗ ') + r[0]).join('<br>') +
+      '<br><br><em>This button genuinely executes preflightBatch1Item() against an in-memory mock — zero real Firestore calls made. commitBatch1Item() write logic is NOT exercised by this mock (it targets the live "db"); that function is verified by code inspection only, consistent with the no-live-writes restriction for this phase.</em>';
+  }
+
+  // ===== Preflight: single-SKU PREFLIGHT ONLY, strictly allowlisted to ML-TWL-003.
+  // Per Phase 1C authorization, this stops at the preflight report — it NEVER calls
+  // commitBatch1Item or touches a supplier. Live execution of the resulting plan requires
+  // separate, explicit Commander authorization. =====
   const SINGLE_SKU_TEST_ALLOWLIST = ['ML-TWL-003'];
   async function importSingleSkuTest(){
     if(!db){ alert('Firebase isn\'t connected yet.'); return; }
@@ -1694,39 +1847,33 @@
 
     const targets = BATCH1_SKUS.filter(i => SINGLE_SKU_TEST_ALLOWLIST.includes(i.sku));
     if(targets.length !== 1 || targets[0].sku !== 'ML-TWL-003'){
-      box.innerHTML = '<strong>Test aborted — allowlist validation failed.</strong> Expected exactly one match for ML-TWL-003, found ' + targets.length + '. No Firestore calls were made.';
+      box.innerHTML = '<strong>Preflight aborted — allowlist validation failed.</strong> No Firestore calls were made.';
       return;
     }
     const item = targets[0];
     const expected = {poNumber:'ML-PO-007', supplierKey:'jinzhou', quantity:1, reorderLevel:5, costPrice:37.17, wholesalePrice:56, price:74};
     const mismatches = Object.keys(expected).filter(k => item[k] !== expected[k]);
     if(mismatches.length){
-      box.innerHTML = '<strong>Test aborted — ML-TWL-003 field mismatch on: ' + mismatches.join(', ') + '.</strong> No Firestore calls were made. Fix BATCH1_SKUS before retrying.';
+      box.innerHTML = '<strong>Preflight aborted — ML-TWL-003 field mismatch on: ' + mismatches.join(', ') + '.</strong> No Firestore calls were made.';
       return;
     }
 
-    box.innerHTML = '<strong>Allowlist verified — running live single-SKU test for ML-TWL-003 only.</strong>';
-    try{
-      const supplierDef = BATCH1_SUPPLIERS.find(s => s.key === 'jinzhou');
-      const {supplierIdByKey, supplierReport} = await setUpBatch1Suppliers([supplierDef]);
-      const result = await resolveBatch1Item(item, supplierIdByKey);
+    box.innerHTML = '<strong>Allowlist verified. Running READ-ONLY preflight for ML-TWL-003 (reads only — no supplier, product, or PO write will occur in this phase)...</strong>';
+    const plan = await preflightBatch1Item(item, db);
 
-      let outcome;
-      if(result.action === 'created') outcome = 'Created — new product doc "ML-TWL-003" and new PO doc "ML-PO-007".';
-      else if(result.action === 'po_recovered') outcome = 'PO recovered — product "ML-TWL-003" already existed and matched; missing PO "ML-PO-007" was created.';
-      else if(result.action === 'skipped') outcome = 'Skipped — both product "ML-TWL-003" and PO "ML-PO-007" already existed and matched. Nothing written.';
-      else if(result.action === 'conflict') outcome = 'CONFLICT — a product with SKU ML-TWL-003 already exists under the name "' + result.existingName + '" (doc ' + result.existingDocId + '). Nothing written.';
-      else if(result.action === 'po_conflict') outcome = 'PO CONFLICT — PO "ML-PO-007" already exists but is linked to a different SKU ("' + result.existingPoSku + '"). Nothing written.';
-      else outcome = 'FAILED at stage "' + result.stage + '": ' + result.error;
-
-      box.innerHTML = '<strong>Single-SKU test result:</strong><br>' + outcome + '<br><br><strong>Supplier:</strong><br>' + supplierReport.join('<br>') +
-        '<br><br>Verify manually: product doc ID "ML-TWL-003" (price 74, wholesale 56, cost 37.17, quantity 1, reorderLevel 5, supplierRef linked to Jinzhou Wangdihao Towel Factory) and PO doc ID "ML-PO-007" (sku ML-TWL-003, qty 1, unitCost 37.17). Also check the live storefront shows this item In Stock at GHC 74.00.';
-      loadProductsFromFirestore();
-      loadSuppliers();
-      loadPurchaseOrders();
-    }catch(err){
-      box.innerHTML = '<strong>Single-SKU test failed:</strong> ' + err.message;
+    if(batch1ItemHasBlockingIssue(plan)){
+      let reason;
+      if(plan.ambiguous) reason = 'AMBIGUOUS — multiple product documents share SKU ML-TWL-003 (doc IDs: ' + plan.matchIds.join(', ') + '). Zero writes, including zero supplier writes.';
+      else if(plan.productConflict) reason = 'PRODUCT CONFLICT — existing doc ' + plan.productConflictInfo.existingDocId + ' has name "' + plan.productConflictInfo.existingName + '", not "Factory Direct Coral Velvet Set — Normal Purple". Zero writes, including zero supplier writes.';
+      else reason = 'PO CONFLICT — ML-PO-007 exists but is linked to sku "' + plan.poConflictInfo.existingPoSku + '" / productRef "' + plan.poConflictInfo.existingProductRef + '", not matching ML-TWL-003. Zero writes, including zero supplier writes.';
+      box.innerHTML = '<strong>Preflight BLOCKED.</strong><br>' + reason;
+      return;
     }
+
+    box.innerHTML = '<strong>Preflight CLEAN — no conflicts found.</strong><br>Plan: ' +
+      (plan.productExists ? 'product already exists at doc "' + plan.resolvedProductDocId + '", would be left untouched' : 'product would be created at deterministic doc ID "ML-TWL-003"') + '.<br>' +
+      (plan.poExists ? 'PO "ML-PO-007" already exists and is correctly linked, would be left untouched' : 'PO "ML-PO-007" would be created, linked to productRef "' + plan.resolvedProductDocId + '"') +
+      '.<br><br><strong>This was a PREFLIGHT ONLY.</strong> No Firestore writes — product, PO, or supplier — were made. Live execution of this exact plan requires separate, explicit Commander authorization.';
   }
 
   // ===== Customer leads (newsletter + wholesale signups) =====
