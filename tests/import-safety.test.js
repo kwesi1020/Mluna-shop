@@ -175,8 +175,8 @@ test('Scenario 4b: name conflict with a missing supplier -> supplier is NOT crea
 });
 
 // ---------- Scenario 5 ----------
-test('Scenario 5: existing PO linked to a different SKU or product document -> blocked BEFORE any product write', async () => {
-  await test('5a: PO ML-PO-007 linked to a different SKU', async () => {
+test('Scenario 5: existing PO linked to a different SKU or product document -> blocked BEFORE any product write', async (t) => {
+  await t.test('5a: PO ML-PO-007 linked to a different SKU', async () => {
     const db = newDb();
     db.seed('purchaseOrders', 'ML-PO-007', poDoc({ sku: 'ML-TWL-002', productRef: 'ML-TWL-002' }));
     const out = await IS.runSingleSkuImport(db, [ITEM], CTX);
@@ -188,7 +188,7 @@ test('Scenario 5: existing PO linked to a different SKU or product document -> b
     assert.equal(db.count('products'), 0, 'product must NOT be created when the PO conflicts');
     assert.equal(db.writeOps().length, 0);
   });
-  await test('5b: PO has the right SKU but points at a different product document', async () => {
+  await t.test('5b: PO has the right SKU but points at a different product document', async () => {
     const db = newDb();
     db.seed('purchaseOrders', 'ML-PO-007', poDoc({ productRef: 'auto-some-other-doc' }));
     const out = await IS.runSingleSkuImport(db, [ITEM], CTX);
@@ -197,7 +197,7 @@ test('Scenario 5: existing PO linked to a different SKU or product document -> b
     assert.equal(db.count('products'), 0);
     assert.equal(db.writeOps().length, 0);
   });
-  await test('5c: the same SKU already has a PO under a different PO number', async () => {
+  await t.test('5c: the same SKU already has a PO under a different PO number', async () => {
     const db = newDb();
     db.seed('purchaseOrders', 'ML-PO-099', poDoc({ poNumber: 'ML-PO-099' }));
     const out = await IS.runSingleSkuImport(db, [ITEM], CTX);
@@ -206,7 +206,7 @@ test('Scenario 5: existing PO linked to a different SKU or product document -> b
     assert.equal(db.count('products'), 0);
     assert.equal(db.writeOps().length, 0);
   });
-  await test('5d: batch-path resolver also blocks and writes nothing', async () => {
+  await t.test('5d: batch-path resolver also blocks and writes nothing', async () => {
     const db = newDb();
     db.seed('purchaseOrders', 'ML-PO-007', poDoc({ sku: 'ML-TWL-002', productRef: 'ML-TWL-002' }));
     const r = await IS.resolveItem(db, ITEM, Object.assign({}, CTX, { supplierIdByKey: { jinzhou: SUP_ID } }));
@@ -217,8 +217,8 @@ test('Scenario 5: existing PO linked to a different SKU or product document -> b
 });
 
 // ---------- Scenario 6 ----------
-test('Scenario 6: supplier lookup or creation failure -> no product or PO written, no null supplierRef', async () => {
-  await test('6a: supplier lookup throws', async () => {
+test('Scenario 6: supplier lookup or creation failure -> no product or PO written, no null supplierRef', async (t) => {
+  await t.test('6a: supplier lookup throws', async () => {
     const db = newDb();
     db.injectFailure({ op: 'query', collection: 'suppliers', times: 99, error: new Error('simulated supplier lookup failure') });
     const out = await IS.runSingleSkuImport(db, [ITEM], CTX);
@@ -229,7 +229,7 @@ test('Scenario 6: supplier lookup or creation failure -> no product or PO writte
     assert.equal(db.count('purchaseOrders'), 0);
     assert.equal(db.writeOps().length, 0);
   });
-  await test('6b: supplier creation throws', async () => {
+  await t.test('6b: supplier creation throws', async () => {
     const db = newDb({ supplier: false });
     db.injectFailure({ op: 'add', collection: 'suppliers', times: 99, error: new Error('simulated supplier create failure') });
     const out = await IS.runSingleSkuImport(db, [ITEM], CTX);
@@ -240,7 +240,7 @@ test('Scenario 6: supplier lookup or creation failure -> no product or PO writte
     assert.equal(db.count('purchaseOrders'), 0);
     assert.equal(db.ops.some(o => o.op === 'commit' || o.op === 'tx-set'), false);
   });
-  await test('6c: duplicate supplier names are ambiguous and block', async () => {
+  await t.test('6c: duplicate supplier names are ambiguous and block', async () => {
     const db = newDb();
     db.seed('suppliers', 'sup-dup', { name: SUPPLIER_NAME, createdAt: 2 });
     const out = await IS.runSingleSkuImport(db, [ITEM], CTX);
@@ -249,7 +249,7 @@ test('Scenario 6: supplier lookup or creation failure -> no product or PO writte
     assert.ok(out.preflight.blockers.some(b => b.indexOf('SUPPLIER_AMBIGUOUS') === 0));
     assert.equal(db.writeOps().length, 0);
   });
-  await test('6d: batch resolver with no resolved supplier writes nothing (product missing)', async () => {
+  await t.test('6d: batch resolver with no resolved supplier writes nothing (product missing)', async () => {
     const db = newDb();
     const ctx = Object.assign({}, CTX, { supplierIdByKey: {}, supplierFailures: { jinzhou: 'lookup_failed: x' } });
     const r = await IS.resolveItem(db, ITEM, ctx);
@@ -258,7 +258,7 @@ test('Scenario 6: supplier lookup or creation failure -> no product or PO writte
     assert.equal(db.count('purchaseOrders'), 0);
     assert.equal(db.writeOps().length, 0);
   });
-  await test('6e: batch resolver with no resolved supplier does not recover a missing PO', async () => {
+  await t.test('6e: batch resolver with no resolved supplier does not recover a missing PO', async () => {
     const db = newDb();
     db.seed('products', 'ML-TWL-003', productDoc());
     const r = await IS.resolveItem(db, ITEM, Object.assign({}, CTX, { supplierIdByKey: {} }));
@@ -266,7 +266,7 @@ test('Scenario 6: supplier lookup or creation failure -> no product or PO writte
     assert.equal(db.count('purchaseOrders'), 0);
     assert.equal(db.writeOps().length, 0);
   });
-  await test('6f: empty-string or null supplier IDs are treated as unresolved', async () => {
+  await t.test('6f: empty-string or null supplier IDs are treated as unresolved', async () => {
     for(const bad of ['', null, undefined, '   ']){
       const db = newDb();
       const r = await IS.resolveItem(db, ITEM, Object.assign({}, CTX, { supplierIdByKey: { jinzhou: bad } }));
@@ -274,7 +274,7 @@ test('Scenario 6: supplier lookup or creation failure -> no product or PO writte
       assert.equal(db.writeOps().length, 0);
     }
   });
-  await test('6g: legacy product with a null supplierRef is flagged for manual review, PO not created', async () => {
+  await t.test('6g: legacy product with a null supplierRef is flagged for manual review, PO not created', async () => {
     const db = newDb();
     db.seed('products', 'ML-TWL-003', productDoc({ supplierRef: null }));
     const r = await IS.resolveItem(db, ITEM, Object.assign({}, CTX, { supplierIdByKey: { jinzhou: SUP_ID } }));
@@ -286,8 +286,8 @@ test('Scenario 6: supplier lookup or creation failure -> no product or PO writte
 });
 
 // ---------- Scenario 7 ----------
-test('Scenario 7: partial failure followed by a successful retry', async () => {
-  await test('7a: supplier created, transaction commit fails, retry succeeds without a duplicate supplier', async () => {
+test('Scenario 7: partial failure followed by a successful retry', async (t) => {
+  await t.test('7a: supplier created, transaction commit fails, retry succeeds without a duplicate supplier', async () => {
     const db = newDb({ supplier: false });
     db.injectFailure({ op: 'commit', error: new Error('simulated commit failure'), times: 1 });
 
@@ -307,7 +307,7 @@ test('Scenario 7: partial failure followed by a successful retry', async () => {
     assert.ok(db.dump('purchaseOrders')['ML-PO-007']);
     assertNoNullSupplierRefs(db);
   });
-  await test('7b: legacy product-only state, PO commit fails, retry recovers the PO', async () => {
+  await t.test('7b: legacy product-only state, PO commit fails, retry recovers the PO', async () => {
     const db = newDb();
     db.seed('products', 'ML-TWL-003', productDoc());
     const before = db.dump('products')['ML-TWL-003'];
@@ -324,7 +324,7 @@ test('Scenario 7: partial failure followed by a successful retry', async () => {
     assert.equal(second.result.action, 'po_recovered');
     assert.ok(db.dump('purchaseOrders')['ML-PO-007']);
   });
-  await test('7c: a third run after success is a no-op', async () => {
+  await t.test('7c: a further run after success is a no-op', async () => {
     const db = newDb();
     await IS.runSingleSkuImport(db, [ITEM], CTX);
     const opsBefore = db.writeOps().length;
@@ -333,7 +333,7 @@ test('Scenario 7: partial failure followed by a successful retry', async () => {
     assert.equal(again.result.action, 'skipped');
     assert.equal(db.writeOps().length, opsBefore, 'no further writes');
   });
-  await test('7d: a conflicting PO appearing between the read and the transaction is caught inside the transaction', async () => {
+  await t.test('7d: a conflicting PO appearing between the read and the transaction is caught inside the transaction', async () => {
     const db = newDb();
     db.beforeTransaction = d => d._put('purchaseOrders', 'ML-PO-007', poDoc({ sku: 'ML-TWL-002', productRef: 'ML-TWL-002' }));
     const out = await IS.runSingleSkuImport(db, [ITEM], CTX);
@@ -377,8 +377,8 @@ test('Scenario 8: any attempt to include a SKU other than ML-TWL-003 is rejected
 });
 
 // ---------- Additional: ID / SKU / productRef consistency ----------
-test('Consistency: product ID, sku field and PO productRef mismatches are flagged for manual review', async () => {
-  await test('same SKU on an auto-ID product document', async () => {
+test('Consistency: product ID, sku field and PO productRef mismatches are flagged for manual review', async (t) => {
+  await t.test('same SKU on an auto-ID product document', async () => {
     const db = newDb();
     db.seed('products', 'auto-xyz', productDoc());
     const out = await IS.runSingleSkuImport(db, [ITEM], CTX);
@@ -386,7 +386,7 @@ test('Consistency: product ID, sku field and PO productRef mismatches are flagge
     assert.ok(out.preflight.flags.some(f => f.code === 'PRODUCT_SKU_ON_DIFFERENT_DOC'));
     assert.equal(db.writeOps().length, 0);
   });
-  await test('document ID is the SKU but the sku field disagrees', async () => {
+  await t.test('document ID is the SKU but the sku field disagrees', async () => {
     const db = newDb();
     db.seed('products', 'ML-TWL-003', productDoc({ sku: 'ML-TWL-002' }));
     const out = await IS.runSingleSkuImport(db, [ITEM], CTX);
@@ -394,7 +394,7 @@ test('Consistency: product ID, sku field and PO productRef mismatches are flagge
     assert.ok(out.preflight.flags.some(f => f.code === 'PRODUCT_SKU_FIELD_MISMATCH'));
     assert.equal(db.writeOps().length, 0);
   });
-  await test('PO supplierRef differs from the resolved supplier', async () => {
+  await t.test('PO supplierRef differs from the resolved supplier', async () => {
     const db = newDb();
     db.seed('products', 'ML-TWL-003', productDoc());
     db.seed('purchaseOrders', 'ML-PO-007', poDoc({ supplierRef: 'sup-other' }));
@@ -403,7 +403,7 @@ test('Consistency: product ID, sku field and PO productRef mismatches are flagge
     assert.ok(out.preflight.flags.some(f => f.code === 'PO_SUPPLIER_MISMATCH'));
     assert.equal(db.writeOps().length, 0);
   });
-  await test('supplier missing but product/PO already exist -> blocked, supplier not created', async () => {
+  await t.test('supplier missing but product/PO already exist -> blocked, supplier not created', async () => {
     const db = newDb({ supplier: false });
     db.seed('products', 'ML-TWL-003', productDoc({ supplierRef: 'dangling' }));
     const pre = await IS.preflightSingleSku(db, [ITEM], CTX);
