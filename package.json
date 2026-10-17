@@ -1,6 +1,10 @@
 {
   "name": "mluna-shop",
   "version": "1.0.0",
+  "scripts": {
+    "check": "node --check lib/import-safety.js && node --check tests/helpers/fake-firestore.js && node --check tests/import-safety.test.js",
+    "test": "node --test tests/import-safety.test.js"
+  },
   "dependencies": {
     "firebase-admin": "^12.0.0"
   }
