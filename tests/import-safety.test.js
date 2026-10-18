@@ -1,6 +1,7 @@
 'use strict';
 /*
- * Regression tests for lib/import-safety.js (Phase 2 import safety remediation).
+ * Regression tests for lib/import-safety.js (Phase 2 import safety remediation)
+ * and for the Phase 2.1 write-containment in admin.html.
  * UNEXECUTED — NOT APPROVED FOR LIVE IMPORT. These tests have never been run.
  * Run (Node >= 18):  npm run check && npm test
  *
@@ -458,4 +459,166 @@ test('static: ML-TWL-003 entry in admin.html BATCH1_SKUS matches the Commander-c
   const entry = new Function('return (' + m[0] + ');')();
   const confirmed = IS.CONFIRMED_SINGLE_SKU_VALUES['ML-TWL-003'];
   Object.keys(confirmed).forEach(k => assert.equal(entry[k], confirmed[k], 'field ' + k));
+});
+
+// ======================================================================
+// Phase 2.1 — import write containment
+// ======================================================================
+const BLOCKED_HANDLERS = [
+  { name: 'importSingleSkuTest', boxId: 'preflightResultBox', buttonText: 'Run Single-SKU Test \u2014 ML-TWL-003 Only' },
+  { name: 'importApprovedTestBatch', boxId: 'importResultBox', buttonText: 'Import Approved Test Batch (5 Neutriherbs SKUs)' },
+  { name: 'importBatch1', boxId: 'importBatch1ResultBox', buttonText: 'Import Batch 1 \u2014 40 New SKUs' }
+];
+
+function mainInlineScript(){
+  const src = readAdmin();
+  const re = /<script>([\s\S]*?)<\/script>/g;
+  let m;
+  while((m = re.exec(src)) !== null){
+    if(m[1].indexOf('function importBatch1') !== -1) return m[1];
+  }
+  throw new Error('main inline script not found in admin.html');
+}
+
+// Runs admin.html's main inline script in a vm sandbox with a stubbed DOM.
+// By default every Firebase / database / ImportSafety access THROWS, so a handler that reaches them fails the test.
+function loadAdminSandbox(overrides){
+  const o = overrides || {};
+  const boxes = {};
+  const sandbox = {
+    window: {},
+    document: {
+      getElementById(id){ return boxes[id] || (boxes[id] = { id: id, style: { display: '' }, innerHTML: '' }); },
+      querySelectorAll(){ return []; }
+    },
+    alert(msg){ sandbox.__alerts.push(String(msg)); },
+    console: console,
+    __alerts: []
+  };
+  if(o.importSafety){
+    sandbox.ImportSafety = o.importSafety;
+  } else {
+    Object.defineProperty(sandbox, 'ImportSafety', { get(){ throw new Error('ImportSafety was accessed'); }, configurable: true });
+  }
+  Object.defineProperty(sandbox, 'firebase', { get(){ throw new Error('firebase was accessed'); }, configurable: true });
+  if(o.fakeDb) sandbox.__fakeDb = o.fakeDb;
+  const ctx = vm.createContext(sandbox);
+  vm.runInContext(mainInlineScript(), ctx, { filename: 'admin.html#main' });
+  if(o.fakeDb){
+    vm.runInContext('db = __fakeDb;', ctx);
+  } else {
+    vm.runInContext('db = new Proxy({}, { get(){ throw new Error("DB_ACCESSED"); }, has(){ throw new Error("DB_ACCESSED"); } });', ctx);
+  }
+  return { ctx: ctx, boxes: boxes, sandbox: sandbox };
+}
+
+function handlerSource(src, name){
+  const start = src.indexOf('async function ' + name + '(){');
+  assert.ok(start !== -1, name + ' not found');
+  const rest = src.slice(start + 1);
+  const m = /\n  (?:\/\/ =====|async function |function )/.exec(rest);
+  return src.slice(start, m ? start + 1 + m.index : src.length);
+}
+
+function buttonTag(html, handlerName){
+  const m = new RegExp('<button[^>]*onclick="' + handlerName + '\\(\\)"[^>]*>').exec(html);
+  assert.ok(m, 'button for ' + handlerName + ' not found');
+  return m[0];
+}
+
+test('containment: IMPORT_WRITES_CONTAINED is literally declared once and set to true', () => {
+  const src = mainInlineScript();
+  assert.ok(/^\s*const IMPORT_WRITES_CONTAINED = true;\s*$/m.test(src), 'flag must be declared as: const IMPORT_WRITES_CONTAINED = true;');
+  assert.equal(src.match(/IMPORT_WRITES_CONTAINED\s*=(?!=)/g).length, 1, 'flag must be assigned exactly once');
+  const { ctx } = loadAdminSandbox();
+  assert.equal(vm.runInContext('IMPORT_WRITES_CONTAINED', ctx), true);
+});
+
+test('containment: each import handler starts with the guard, before any Firebase/database access', () => {
+  const src = readAdmin();
+  for(const h of BLOCKED_HANDLERS){
+    const body = handlerSource(src, h.name).replace(/^async function \w+\(\)\{/, '');
+    assert.ok(/^\s*if\(IMPORT_WRITES_CONTAINED\)\{[^}]*\breturn;\s*\}/.test(body), h.name + ': guard must be the first statement');
+    assert.ok(body.indexOf('IMPORT_WRITES_CONTAINED') < 40, h.name + ': guard must open the function body');
+    const guardIdx = body.indexOf('IMPORT_WRITES_CONTAINED');
+    [/\bdb\b/, /\bfirebase\b/, /\bImportSafety\b/, /\balert\(/].forEach(token => {
+      const m = token.exec(body);
+      if(m) assert.ok(guardIdx < m.index, h.name + ': ' + token + ' appears before the guard');
+    });
+    assert.ok(/\bdb\b/.test(body), h.name + ': sanity check — handler is expected to use db after the guard');
+  }
+});
+
+test('containment: executing each handler returns blocked without touching db, firebase, ImportSafety or alert', async () => {
+  for(const h of BLOCKED_HANDLERS){
+    const { ctx, boxes, sandbox } = loadAdminSandbox();
+    await assert.doesNotReject(async () => { await vm.runInContext(h.name + '()', ctx); }, h.name + ' must not throw (no db/firebase/ImportSafety access)');
+    assert.deepEqual(Object.keys(boxes), [h.boxId], h.name + ': must touch only its own result box');
+    assert.equal(boxes[h.boxId].style.display, 'block');
+    assert.ok(boxes[h.boxId].innerHTML.indexOf('Import blocked') !== -1, h.name + ': must show a blocked message');
+    assert.ok(boxes[h.boxId].innerHTML.indexOf('No Firestore calls were made') !== -1);
+    assert.equal(sandbox.__alerts.length, 0, h.name + ': must not call alert');
+  }
+});
+
+test('containment: handlers stay blocked even when a working fake database is present', async () => {
+  for(const h of BLOCKED_HANDLERS){
+    const fake = newDb().blockWrites();
+    const { ctx } = loadAdminSandbox({ fakeDb: fake, importSafety: IS });
+    await vm.runInContext(h.name + '()', ctx);
+    assert.equal(fake.ops.length, 0, h.name + ': no Firestore operation of any kind');
+  }
+});
+
+test('containment: all three import buttons are disabled in the HTML', () => {
+  const src = readAdmin();
+  for(const h of BLOCKED_HANDLERS){
+    const tag = buttonTag(src, h.name);
+    assert.ok(/\sdisabled(\s|=|>)/.test(tag), h.name + ': button must carry the disabled attribute: ' + tag);
+    assert.ok(src.includes(h.buttonText), 'button label present: ' + h.buttonText);
+    assert.equal(src.split('onclick="' + h.name + '()"').length - 1, 1, h.name + ': exactly one button');
+  }
+});
+
+test('containment: offline checks and the read-only preflight remain available (buttons enabled, handlers defined)', async () => {
+  const src = readAdmin();
+  ['runBatch1OfflineChecks', 'runSingleSkuPreflight'].forEach(name => {
+    const tag = buttonTag(src, name);
+    assert.equal(/\sdisabled(\s|=|>)/.test(tag), false, name + ': button must NOT be disabled');
+  });
+  const { ctx, boxes } = loadAdminSandbox();
+  assert.equal(vm.runInContext('typeof runBatch1OfflineChecks', ctx), 'function');
+  assert.equal(vm.runInContext('typeof runSingleSkuPreflight', ctx), 'function');
+  assert.ok(!/IMPORT_WRITES_CONTAINED/.test(handlerSourceAny(src, 'runSingleSkuPreflight')), 'preflight is not blocked by the containment flag');
+
+  vm.runInContext('runBatch1OfflineChecks()', ctx);
+  assert.ok(/offline checks/i.test(boxes.preflightResultBox.innerHTML), 'offline checks produced a result');
+  assert.ok(boxes.preflightResultBox.innerHTML.indexOf('All offline checks passed.') !== -1, 'offline checks pass: ' + boxes.preflightResultBox.innerHTML);
+});
+
+function handlerSourceAny(src, name){
+  const start = src.indexOf('function ' + name + '(){');
+  assert.ok(start !== -1, name + ' not found');
+  const rest = src.slice(start + 1);
+  const m = /\n  (?:\/\/ =====|async function |function )/.exec(rest);
+  return src.slice(start, m ? start + 1 + m.index : src.length);
+}
+
+test('containment: the read-only preflight runs reads only and a clean result is not presented as permission to write', async () => {
+  const fake = newDb().blockWrites();
+  const { ctx, boxes } = loadAdminSandbox({ fakeDb: fake, importSafety: IS });
+  await vm.runInContext('runSingleSkuPreflight()', ctx);
+  assert.ok(fake.ops.length > 0, 'preflight read something');
+  assert.ok(fake.ops.every(o => o.op === 'get' || o.op === 'query'), 'only reads: ' + JSON.stringify(fake.ops.map(o => o.op)));
+  const html = boxes.preflightResultBox.innerHTML;
+  assert.ok(html.indexOf('NOT permission to write') !== -1, 'clean preflight must say it is not permission to write: ' + html);
+  assert.equal(html.indexOf('would be permitted'), -1);
+});
+
+test('containment: page copy states that import write paths are disabled and a clean preflight is not permission', () => {
+  const src = readAdmin();
+  assert.ok(src.includes('Every import write path is disabled'));
+  assert.ok(src.includes('A clean preflight is not permission to write.'));
+  assert.ok(src.includes('Offline static checks and the read-only preflight are available'));
+  assert.equal(src.includes('a write run would be permitted'), false, 'old permission-implying copy must be gone');
 });
