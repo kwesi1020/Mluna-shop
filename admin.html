@@ -714,7 +714,7 @@
     if(p === null || q === null || p < 0 || q < 0 || !Number.isInteger(q)) return null;
     return p * q;
   }
-  function orderTotalValid(o){ const t = RS.num(o && o.total); return t !== null && t >= 0; }
+  function orderTotalValid(o){ const t = RS.num(o && o.total); return t !== null && t >= 0 && t <= 1e12; }
   function orderTotalHtml(o){ return orderTotalValid(o) ? `<span class="price">${money(o.total)}</span>` : '<span class="demo-tag oos">Invalid total</span>'; }
   function catLabel(cat){ return HAS(CATEGORY_LABELS, cat) ? CATEGORY_LABELS[cat] : (HAS(customCategoryLabels, cat) ? customCategoryLabels[cat] : cat); }
 

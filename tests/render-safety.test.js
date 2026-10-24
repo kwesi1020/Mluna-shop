@@ -172,7 +172,7 @@ test('storefront: delegated handlers pass exact data and ignore forged categorie
   store(pg, { skin: [hostileProduct(PAYLOADS[3])] });
   pg.run('selectOptionChoice = function(){ __calls.push(Array.from(arguments).slice(0, 4)); };');
   click(pg, { act: 'option-pill', cat: 'skin', i: '0', gi: '0', choice: PAYLOADS[3] }, 'SPAN');
-  assert.deepEqual(pg.ctx.__calls, [['skin', 0, 0, PAYLOADS[3]]]);
+  assert.deepEqual(JSON.parse(JSON.stringify(pg.ctx.__calls)), [['skin', 0, 0, PAYLOADS[3]]]);
   click(pg, { act: 'option-pill', cat: 'constructor', i: '0', gi: '0', choice: 'x' }, 'SPAN');
   click(pg, { act: 'option-pill', cat: 'skin', i: '9', gi: '0', choice: 'x' }, 'SPAN');
   assert.equal(pg.ctx.__calls.length, 1);
@@ -267,11 +267,11 @@ test('admin: delegated actions pass exact ids and reject forged input', () => {
   pg.ctx.__calls = [];
   pg.run("deleteOrder = function(id){ __calls.push(['del', id]); }; setReviewStatus = function(id, s){ __calls.push(['rs', id, s]); }; adjustComboQty = function(){ __calls.push(['combo']); };");
   click(pg, { act: 'order-delete', id: PAYLOADS[0] });
-  assert.deepEqual(pg.ctx.__calls[0], ['del', PAYLOADS[0]]);
+  assert.deepEqual(JSON.parse(JSON.stringify(pg.ctx.__calls[0])), ['del', PAYLOADS[0]]);
   click(pg, { act: 'review-status', id: 'r1', status: 'javascript' });
   assert.equal(pg.ctx.__calls.length, 1);
   click(pg, { act: 'review-status', id: 'r1', status: 'approved' });
-  assert.deepEqual(pg.ctx.__calls[1], ['rs', 'r1', 'approved']);
+  assert.deepEqual(JSON.parse(JSON.stringify(pg.ctx.__calls[1])), ['rs', 'r1', 'approved']);
   click(pg, { act: 'combo-adjust', cat: 'constructor', i: '0', key: 'k', delta: '1' });
   assert.equal(pg.ctx.__calls.length, 2);
 });
