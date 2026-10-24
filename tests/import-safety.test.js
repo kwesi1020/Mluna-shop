@@ -487,7 +487,9 @@ function loadAdminSandbox(overrides){
   const boxes = {};
   const sandbox = {
     window: {},
+    RenderSafety: require('../lib/render-safety.js'),
     document: {
+      addEventListener(){},
       getElementById(id){ return boxes[id] || (boxes[id] = { id: id, style: { display: '' }, innerHTML: '' }); },
       querySelectorAll(){ return []; }
     },
