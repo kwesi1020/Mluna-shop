@@ -194,6 +194,8 @@
   .auditnote-tag{ font-size:0.62rem; text-transform:uppercase; letter-spacing:0.05em; font-weight:700; padding:3px 8px; border-radius:100px; display:inline-block; margin-left:6px; vertical-align:middle; background:#dcd3c2; color:#4a4030; cursor:help; }
   .test-btn{ border:1px solid var(--sage); color:var(--sage); background:transparent; padding:11px 20px; border-radius:100px; font-weight:600; font-size:0.82rem; cursor:pointer; }
   .test-btn:hover{ background:var(--sage); color:#fff; }
+  .test-btn:disabled{ opacity:0.5; cursor:not-allowed; }
+  .test-btn:disabled:hover{ background:transparent; color:var(--sage); }
 
   @media (max-width: 640px){ .form-grid{ grid-template-columns:1fr; } }
 </style>
@@ -256,6 +258,7 @@
         <div class="analytics-card"><div class="num" id="statAvgOrder">GHC 0.00</div><div class="lbl">Average Order Value</div></div>
         <div class="analytics-card"><div class="num" id="statItemsSold">0</div><div class="lbl">Items Sold</div></div>
       </div>
+      <p id="analyticsInvalidNote" class="analytics-empty" style="display:none;"></p>
 
       <h3 class="analytics-subhead">Best-Selling Products</h3>
       <div id="analyticsBestSellers"></div>
@@ -322,25 +325,27 @@
           <tbody id="profitTableBody"></tbody>
         </table>
         <p id="profitEmptyMsg" class="analytics-empty" style="display:none;">No sales in this period yet.</p>
+        <p id="profitInvalidNote" class="analytics-empty" style="display:none;"></p>
       </div>
       <p style="font-size:0.74rem; color:rgba(23,20,18,0.45); margin-top:14px;">Cost = current Cost Price × units sold in the period (doesn't track historical cost changes). * = no Cost Price set yet, so cost shows as 0 for that row. Refunds aren't tracked in the order system yet, so only Cancelled orders are excluded.</p>
     </div>
 
     <div style="margin-bottom:56px; padding-bottom:32px; border-top:1px solid var(--line); padding-top:32px;">
       <h2 style="margin-bottom:6px;">Workbook Import</h2>
-      <p style="font-size:0.85rem; color:rgba(23,20,18,0.6); margin-bottom:18px;">Controlled, Commander-approved imports from the Mluna Enterprise workbook audit. Each batch is a one-time import — running a batch twice will not create duplicates.</p>
-      <button id="importBatchBtn" class="submit-btn" onclick="importApprovedTestBatch()">Import Approved Test Batch (5 Neutriherbs SKUs)</button>
+      <p style="font-size:0.85rem; color:rgba(23,20,18,0.6); margin-bottom:18px;"><strong>All import write paths are currently disabled (write containment is on).</strong> The Phase 2 safety code has not been executed, tested or independently reviewed. The buttons below stay disabled until Commander lifts containment in a reviewed change.</p>
+      <button id="importBatchBtn" class="submit-btn" onclick="importApprovedTestBatch()" disabled title="Disabled — import write containment is on">Import Approved Test Batch (5 Neutriherbs SKUs)</button>
       <div id="importResultBox" class="import-result-box" style="display:none;"></div>
 
       <div style="margin-top:24px; padding-top:20px; border-top:1px dashed var(--line);">
         <h3 style="font-size:1rem; margin-bottom:8px;">Preflight — Offline Checks &amp; Single-SKU Test</h3>
-        <p style="font-size:0.78rem; color:rgba(23,20,18,0.55); margin-bottom:12px;">Run these before the full Batch 1 import. Neither writes to Firestore except the single-SKU test, which only ever touches ML-TWL-003 and its linked PO/supplier.</p>
+        <p style="font-size:0.78rem; color:rgba(23,20,18,0.55); margin-bottom:12px;">Offline static checks and the read-only preflight are available and never write to Firestore. Every import write path is disabled, including the single-SKU test, the approved test batch and Batch 1. A clean preflight is not permission to write.</p>
         <button class="test-btn" onclick="runBatch1OfflineChecks()">Run Offline Static Checks (no writes)</button>
-        <button class="test-btn" onclick="importSingleSkuTest()" style="margin-left:10px;">Run Single-SKU Test — ML-TWL-003 Only</button>
+        <button class="test-btn" onclick="runSingleSkuPreflight()" style="margin-left:10px;">Run Read-Only Preflight — ML-TWL-003 (no writes)</button>
+        <button class="test-btn" onclick="importSingleSkuTest()" style="margin-left:10px;" disabled title="Disabled — import write containment is on">Run Single-SKU Test — ML-TWL-003 Only</button>
         <div id="preflightResultBox" class="import-result-box" style="display:none;"></div>
       </div>
 
-      <button id="importBatch1Btn" class="submit-btn" onclick="importBatch1()" style="margin-top:24px;">Import Batch 1 — 40 New SKUs (5 already live, skipped automatically)</button>
+      <button id="importBatch1Btn" class="submit-btn" onclick="importBatch1()" style="margin-top:24px;" disabled title="Disabled — import write containment is on">Import Batch 1 — 40 New SKUs (5 already live, skipped automatically)</button>
       <p style="font-size:0.74rem; color:rgba(23,20,18,0.45); margin-top:8px;">Batch 1 target: 40 SKUs in the import list. 5 (ML-MSK-001–005) are already live from the earlier test import and are not part of this list at all — they're excluded by design, not detected-and-skipped. Every target SKU now also recovers a missing linked PO on retry, even if its product already exists from a prior partial run. ML-HC-001 carries its product cost (GHC 18.91) and PO cost (GHC 7.71) as two separate fields. The 14 Reed Diffuser (RD) items import with quantity 0 / incoming 2 — the workbook's own Qty in Stock cell shows 2, but this is preserved as an audit note rather than used directly, since the Notes column states the goods are not yet physically received.</p>
       <div id="importBatch1ResultBox" class="import-result-box" style="display:none;"></div>
     </div>
@@ -679,7 +684,40 @@
   const CLOUDINARY_CLOUD_NAME = 'gi28yswe';
   const CLOUDINARY_UPLOAD_PRESET = 'Mluna shop';
 </script>
+<script src="lib/import-safety.js"></script>
+<script src="lib/render-safety.js"></script>
 <script>
+  // ===== Import write containment (Phase 2.1) =====
+  // Hard flag. While true, every inventory-import write handler returns immediately,
+  // before any Firebase or database access. Lifting it requires a separate, reviewed change.
+  const IMPORT_WRITES_CONTAINED = true;
+  function showImportBlocked(boxId){
+    const box = document.getElementById(boxId);
+    if(!box) return;
+    box.style.display = 'block';
+    box.innerHTML = '<strong>Import blocked — write containment is ON.</strong> Every inventory-import write path is disabled until the Phase 2 remediation has been executed, tested and independently reviewed. Offline checks and the read-only preflight remain available. No Firestore calls were made.';
+  }
+
+  // ===== Rendering safety (Phase 1B) — helpers live in lib/render-safety.js =====
+  const RS = RenderSafety;
+  const esc = RS.esc;
+  const HAS = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+  const ORDER_STATUSES = ['pending','confirmed','shipped','delivered','cancelled'];
+  const PAY_STATUSES = ['paid','unpaid'];
+  const REVIEW_STATUSES = ['pending','approved','rejected'];
+  const PRICE_STATUSES = ['priced','retail_only','pending'];
+  let profitInvalidLines = 0;
+  function safeClass(v, allowed, fallback){ return allowed.indexOf(v) !== -1 ? v : fallback; }
+  function money(v){ return RS.money(v); }
+  function lineTotalOrNull(it){
+    const p = RS.num(it && it.price), q = RS.num(it && it.qty);
+    if(p === null || q === null || p < 0 || q < 0 || !Number.isInteger(q)) return null;
+    return p * q;
+  }
+  function orderTotalValid(o){ const t = RS.num(o && o.total); return t !== null && t >= 0 && t <= 1e12; }
+  function orderTotalHtml(o){ return orderTotalValid(o) ? `<span class="price">${money(o.total)}</span>` : '<span class="demo-tag oos">Invalid total</span>'; }
+  function catLabel(cat){ return HAS(CATEGORY_LABELS, cat) ? CATEGORY_LABELS[cat] : (HAS(customCategoryLabels, cat) ? customCategoryLabels[cat] : cat); }
+
   const DEFAULT_PRODUCTS = {
     skin: [
       {n:"Skin Care Combo", note:"Vitamin C, Retinol, Salicylic & Collagen series", price:450, old:480},
@@ -780,8 +818,8 @@
     const fixedCats = Object.keys(DEFAULT_PRODUCTS);
     const customCats = Object.keys(PRODUCTS).filter(cat => !fixedCats.includes(cat));
     group.innerHTML = customCats.map(cat => {
-      const label = customCategoryLabels[cat] || cat;
-      return `<option value="${cat}">${label}</option>`;
+      const label = HAS(customCategoryLabels, cat) ? customCategoryLabels[cat] : cat;
+      return `<option value="${esc(cat)}">${esc(label)}</option>`;
     }).join('');
   }
 
@@ -924,11 +962,10 @@
       const key = buildComboKey(combo);
       const label = Object.values(combo).join(' / ');
       const val = pendingComboStock[key] !== undefined ? pendingComboStock[key] : 0;
-      const safeKey = key.replace(/'/g,"\\'");
       return `
       <div class="combo-stock-row">
-        <span class="combo-stock-label">${label}</span>
-        <input type="number" min="0" step="1" value="${val}" onchange="pendingComboStock['${safeKey}'] = Number(this.value)">
+        <span class="combo-stock-label">${esc(label)}</span>
+        <input type="number" min="0" step="1" value="${esc(val)}" data-act="combo-stock" data-key="${esc(key)}">
       </div>`;
     }).join('');
   }
@@ -1148,7 +1185,7 @@
     const photoBox = document.getElementById('currentPhotoBox');
     const thumbs = document.getElementById('currentPhotoThumbs');
     if(p.images && p.images.length){
-      thumbs.innerHTML = p.images.map(url => `<img src="${url}" alt="">`).join('');
+      thumbs.innerHTML = p.images.map(u => RS.safeUrl(u)).filter(Boolean).map(u => `<img src="${esc(u)}" alt="">`).join('');
       photoBox.style.display = 'flex';
     } else {
       thumbs.innerHTML = '';
@@ -1224,7 +1261,7 @@
       }, err => {
         console.warn('Suppliers load failed:', err);
         const el = document.getElementById('suppliersList');
-        if(el) el.innerHTML = '<p style="font-size:0.85rem; color:rgba(23,20,18,0.5);">Could not load suppliers: ' + err.message + '</p>';
+        if(el) el.innerHTML = '<p style="font-size:0.85rem; color:rgba(23,20,18,0.5);">Could not load suppliers: ' + RS.esc(err.message) + '</p>';
       });
   }
   function renderSuppliersList(){
@@ -1247,7 +1284,7 @@
     const sel = document.getElementById('pfSupplier');
     if(!sel) return;
     const current = sel.value;
-    sel.innerHTML = '<option value="">No supplier linked</option>' + SUPPLIERS.map(s => `<option value="${s.docId}">${(s.name||'').replace(/</g,'&lt;')}</option>`).join('');
+    sel.innerHTML = '<option value="">No supplier linked</option>' + SUPPLIERS.map(s => `<option value="${esc(s.docId)}">${esc(s.name||'')}</option>`).join('');
     sel.value = current;
   }
   function supplierNameById(id){
@@ -1266,7 +1303,7 @@
       }, err => {
         console.warn('Purchase orders load failed:', err);
         const el = document.getElementById('purchaseOrdersList');
-        if(el) el.innerHTML = '<p style="font-size:0.85rem; color:rgba(23,20,18,0.5);">Could not load purchase orders: ' + err.message + '</p>';
+        if(el) el.innerHTML = '<p style="font-size:0.85rem; color:rgba(23,20,18,0.5);">Could not load purchase orders: ' + RS.esc(err.message) + '</p>';
       });
   }
   function renderPurchaseOrdersList(){
@@ -1276,13 +1313,13 @@
     el.innerHTML = PURCHASE_ORDERS.map(po => `
       <div class="admin-row">
         <div>
-          <strong>${(po.poNumber||'').replace(/</g,'&lt;')}</strong> — ${(po.productName||'').replace(/</g,'&lt;')}
-          ${po.sku ? `<span class="sku-tag">${po.sku.replace(/</g,'&lt;')}</span>` : ''}
-          <span class="status-badge status-${po.paymentStatus==='paid'?'paid':'unpaid'}">${po.paymentStatus||'unpaid'}</span>
-          <span class="status-badge status-confirmed">${(po.orderStatus||'').replace(/_/g,' ')}</span><br>
-          <span style="font-size:0.78rem; color:rgba(23,20,18,0.6);">Supplier: ${(po.supplierName||'Unknown').replace(/</g,'&lt;')} · Qty ${po.qty||0} · Cost GHC ${(po.totalCost||0).toFixed(2)}${po.warehouseArrivalDate ? ' · Arrival: '+new Date(po.warehouseArrivalDate).toLocaleDateString() : ''}</span>
+          <strong>${esc(po.poNumber||'')}</strong> — ${esc(po.productName||'')}
+          ${po.sku ? `<span class="sku-tag">${esc(po.sku)}</span>` : ''}
+          <span class="status-badge status-${po.paymentStatus==='paid'?'paid':'unpaid'}">${esc(po.paymentStatus||'unpaid')}</span>
+          <span class="status-badge status-confirmed">${esc(String(po.orderStatus||'').replace(/_/g,' '))}</span><br>
+          <span style="font-size:0.78rem; color:rgba(23,20,18,0.6);">Supplier: ${esc(po.supplierName||'Unknown')} · Qty ${esc(po.qty||0)} · Cost ${money(po.totalCost)}${po.warehouseArrivalDate ? ' · Arrival: '+esc(new Date(po.warehouseArrivalDate).toLocaleDateString()) : ''}</span>
           ${po.excludeFromInventory ? '<br><span class="demo-tag oos">Excluded from MLuna inventory</span>' : ''}
-          ${po.dateValidationStatus === 'inconsistent' ? `<br><span class="demo-tag oos" title="${(po.dateValidationNote||'').replace(/"/g,'&quot;')}">⚠ Date inconsistency — ${po.dateValidationNote}</span>` : ''}
+          ${po.dateValidationStatus === 'inconsistent' ? `<br><span class="demo-tag oos" title="${esc(po.dateValidationNote||'')}">⚠ Date inconsistency — ${esc(po.dateValidationNote||'')}</span>` : ''}
         </div>
       </div>`).join('');
   }
@@ -1340,6 +1377,7 @@
   }
 
   async function importApprovedTestBatch(){
+    if(IMPORT_WRITES_CONTAINED){ showImportBlocked('importResultBox'); return; }
     if(!db){ alert('Firebase isn\'t connected yet.'); return; }
     const btn = document.getElementById('importBatchBtn');
     const resultBox = document.getElementById('importResultBox');
@@ -1419,7 +1457,7 @@
       loadSuppliers();
       loadPurchaseOrders();
     }catch(err){
-      resultBox.innerHTML = '<strong>Import failed:</strong> ' + err.message;
+      resultBox.innerHTML = '<strong>Import failed:</strong> ' + RS.esc(err.message);
       btn.disabled = false;
       btn.textContent = 'Import Approved Test Batch (5 Neutriherbs SKUs)';
     }
@@ -1487,156 +1525,77 @@
     { sku:"ML-RD-014", n:"Yara Home Reed Diffuser - Baby Pink (120ml)", category:"gifts", note:"Arabic-inspired reed diffuser, baby pink & silver packaging", price:75.00, old:75.00, wholesalePrice:29.00, costPrice:19.44, quantity:0, incomingStock:2, stockVerified:true, reorderLevel:5, auditNote:RD_STOCK_AUDIT_NOTE, poNumber:"ML-PO-059", poDate:"2026-09-03", supplierKey:"danding" }
   ];
 
-  // Single, shared per-item resolver used by BOTH the full Batch 1 import and the
-  // single-SKU test. Handles product-only-exists, PO-only-missing, and both-missing
-  // cases independently, so a retry after a partial failure recovers whatever is
-  // still missing without ever touching a record that's already correct.
-  async function resolveBatch1Item(item, supplierIdByKey){
-    const productRef = db.collection('products').doc(item.sku);
-    let productExists = false;
-    let productDoc = null;
-
-    const skuFieldSnap = await db.collection('products').where('sku','==',item.sku).limit(1).get();
-    if(!skuFieldSnap.empty){
-      productExists = true;
-      productDoc = skuFieldSnap.docs[0];
-    } else {
-      const byId = await productRef.get();
-      if(byId.exists){ productExists = true; productDoc = byId; }
+  // ===== Import safety wiring =====
+  // The decision logic (conflict detection, supplier resolution, transaction, preflight, allowlist)
+  // lives in lib/import-safety.js and is what tests/import-safety.test.js imports.
+  // Phase 2 — UNEXECUTED, NOT APPROVED FOR LIVE IMPORT.
+  function importSafetyMissing(box){
+    if(typeof ImportSafety !== 'undefined') return false;
+    if(box){
+      box.style.display = 'block';
+      box.innerHTML = '<strong>Import safety module (lib/import-safety.js) did not load.</strong> All import actions are disabled until it loads. No Firestore calls were made.';
     }
-
-    if(productExists){
-      const existingName = (productDoc.data() || {}).n || '';
-      if(existingName !== item.n){
-        return {sku:item.sku, n:item.n, action:'conflict', existingName, existingDocId:productDoc.id};
-      }
-    } else {
-      try{
-        const supplierId = supplierIdByKey[item.supplierKey];
-        const productData = {
-          category: item.category, n: item.n, note: item.note,
-          price: item.price, old: item.old, costPrice: item.costPrice, isFreeGift: false,
-          wholesalePrice: item.wholesalePrice,
-          landedCost: (item.landedCost !== undefined && item.landedCost !== null) ? item.landedCost : null,
-          poUnitCost: (item.poUnitCost !== undefined && item.poUnitCost !== null) ? item.poUnitCost : null,
-          images: [], variants: [], optionGroups: [], comboStock: {},
-          status: item.stockVerified ? 'in_stock' : 'coming_soon',
-          quantity: item.quantity,
-          sku: item.sku, reorderLevel: item.reorderLevel, incomingStock: item.incomingStock || 0,
-          stockVerified: !!item.stockVerified,
-          auditNote: item.auditNote || null,
-          supplierRef: supplierId || null, priceStatus: 'priced',
-          importedFromWorkbook: true, importBatchId: BATCH1_ID,
-          archived: false, sortOrder: Date.now()
-        };
-        await productRef.set(productData);
-      }catch(err){
-        return {sku:item.sku, n:item.n, action:'failed', stage:'product', error:err.message};
-      }
-    }
-
-    try{
-      const poRef = db.collection('purchaseOrders').doc(item.poNumber);
-      const poSnap = await poRef.get();
-      if(poSnap.exists){
-        const poData = poSnap.data() || {};
-        if(poData.sku !== item.sku || poData.productRef !== item.sku){
-          return {sku:item.sku, n:item.n, action:'po_conflict', poNumber:item.poNumber, existingPoSku:poData.sku};
-        }
-        return {sku:item.sku, n:item.n, action: productExists ? 'skipped' : 'created', poStatus:'already_present'};
-      } else {
-        const supplierId = supplierIdByKey[item.supplierKey];
-        const poUnitCostForRecord = (item.poUnitCost !== undefined && item.poUnitCost !== null) ? item.poUnitCost : item.costPrice;
-        const poData = {
-          poNumber: item.poNumber,
-          date: new Date(item.poDate).getTime(),
-          supplierRef: supplierId || null,
-          supplierName: BATCH1_SUPPLIERS.find(s => s.key === item.supplierKey).name,
-          sku: item.sku, productName: item.n, productRef: item.sku,
-          qty: (item.quantity || 0) + (item.incomingStock || 0),
-          unitCost: poUnitCostForRecord,
-          totalCost: poUnitCostForRecord * ((item.quantity || 0) + (item.incomingStock || 0)),
-          paymentStatus: 'paid',
-          orderStatus: item.incomingStock ? 'processing' : 'unknown',
-          warehouseArrivalDate: null,
-          notes: 'Imported from workbook audit — Batch 1 (' + BATCH1_ID + ')' + (item.auditNote ? ' — ' + item.auditNote : ''),
-          excludeFromInventory: false,
-          dateValidationStatus: 'unknown', dateValidationNote: '',
-          importBatchId: BATCH1_ID, createdAt: Date.now()
-        };
-        await poRef.set(poData);
-        return {sku:item.sku, n:item.n, action: productExists ? 'po_recovered' : 'created', poStatus:'created'};
-      }
-    }catch(err){
-      return {sku:item.sku, n:item.n, action:'failed', stage:'po', error:err.message};
-    }
+    return true;
   }
-
-  async function setUpBatch1Suppliers(suppliersToSetUp){
-    const supplierIdByKey = {};
-    const supplierReport = [];
-    for(const sup of suppliersToSetUp){
-      const supSnap = await db.collection('suppliers').where('name','==',sup.name).limit(1).get();
-      if(!supSnap.empty){
-        supplierIdByKey[sup.key] = supSnap.docs[0].id;
-        supplierReport.push(sup.name + ' — reused existing');
-      } else {
-        try{
-          const supRef = await db.collection('suppliers').add({
-            name: sup.name, platform: sup.platform, phone: sup.phone,
-            categorySupplied: sup.categorySupplied, notes: sup.notes, createdAt: Date.now()
-          });
-          supplierIdByKey[sup.key] = supRef.id;
-          supplierReport.push(sup.name + ' — created');
-        }catch(supErr){
-          supplierReport.push(sup.name + ' — FAILED: ' + supErr.message);
-        }
-      }
-    }
-    return {supplierIdByKey, supplierReport};
+  function escapeHtml(s){
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
+  function batch1Context(extra){
+    return Object.assign({batchId: BATCH1_ID, suppliers: BATCH1_SUPPLIERS, now: Date.now}, extra || {});
+  }
+  function describeFlags(flags){
+    return (flags || []).map(f => escapeHtml(f.code + ' — ' + f.message)).join('<br>');
+  }
+  // Batch 1 stays locked until the single-SKU test succeeds in this page session.
+  let singleSkuLiveVerified = false;
 
   async function importBatch1(){
+    if(IMPORT_WRITES_CONTAINED){ showImportBlocked('importBatch1ResultBox'); return; }
     if(!db){ alert('Firebase isn\'t connected yet.'); return; }
     const btn = document.getElementById('importBatch1Btn');
     const resultBox = document.getElementById('importBatch1ResultBox');
     resultBox.style.display = 'block';
+    if(importSafetyMissing(resultBox)) return;
+    if(!singleSkuLiveVerified){
+      resultBox.innerHTML = '<strong>Batch 1 import blocked.</strong> The single-SKU test for ML-TWL-003 has not completed successfully in this browser session. Run the read-only preflight and the single-SKU test first (Commander approval is required for the live test). No Firestore calls were made.';
+      return;
+    }
     btn.disabled = true;
 
     try{
-      btn.textContent = 'Setting up suppliers (reusing existing where possible)...';
-      const {supplierIdByKey, supplierReport} = await setUpBatch1Suppliers(BATCH1_SUPPLIERS);
+      btn.textContent = 'Resolving suppliers (reusing existing where possible)...';
+      const setup = await ImportSafety.setUpSuppliers(db, BATCH1_SUPPLIERS, {now: Date.now});
+      const ctx = batch1Context({supplierIdByKey: setup.supplierIdByKey, supplierFailures: setup.supplierFailures});
 
-      const created = [], poRecovered = [], skipped = [], conflicts = [], poConflicts = [], failed = [];
+      const buckets = {created:[], po_recovered:[], product_recovered:[], skipped:[], conflict:[], supplier_unresolved:[], invalid_item:[], failed:[]};
       for(let idx = 0; idx < BATCH1_SKUS.length; idx++){
         const item = BATCH1_SKUS[idx];
         btn.textContent = 'Processing ' + item.sku + ' (' + (idx+1) + ' of ' + BATCH1_SKUS.length + ')...';
-        const result = await resolveBatch1Item(item, supplierIdByKey);
-        if(result.action === 'created') created.push(result);
-        else if(result.action === 'po_recovered') poRecovered.push(result);
-        else if(result.action === 'skipped') skipped.push(result);
-        else if(result.action === 'conflict') conflicts.push(result);
-        else if(result.action === 'po_conflict') poConflicts.push(result);
-        else if(result.action === 'failed') failed.push(result);
+        const result = await ImportSafety.resolveItem(db, item, ctx);
+        (buckets[result.action] || buckets.failed).push(result);
       }
 
+      const list = (title, arr, fmt) => arr.length ? '<strong>' + title + '</strong><br>' + arr.map(fmt).join('<br>') + '<br><br>' : '';
+      const plain = r => escapeHtml(r.sku + ' — ' + r.n);
       resultBox.innerHTML =
-        '<strong>Batch 1 result — ' + created.length + ' created, ' + poRecovered.length + ' PO-recovered, ' +
-        skipped.length + ' skipped (already complete), ' + conflicts.length + ' product conflicts, ' +
-        poConflicts.length + ' PO conflicts, ' + failed.length + ' failed.</strong><br><br>' +
-        '<strong>Suppliers:</strong><br>' + supplierReport.join('<br>') + '<br><br>' +
-        (created.length ? '<strong>Created (product + PO):</strong><br>' + created.map(r => r.sku + ' — ' + r.n).join('<br>') + '<br><br>' : '') +
-        (poRecovered.length ? '<strong>PO recovered (product already existed, missing PO created):</strong><br>' + poRecovered.map(r => r.sku + ' — ' + r.n).join('<br>') + '<br><br>' : '') +
-        (skipped.length ? '<strong>Skipped (product + PO both already correct, untouched):</strong><br>' + skipped.map(r => r.sku + ' — ' + r.n).join('<br>') + '<br><br>' : '') +
-        (conflicts.length ? '<strong>Product conflicts (manual review needed, nothing written):</strong><br>' + conflicts.map(r => r.sku + ' — expected "' + r.n + '" but found "' + r.existingName + '" (doc ' + r.existingDocId + ')').join('<br>') + '<br><br>' : '') +
-        (poConflicts.length ? '<strong>PO conflicts (PO number already used by a different SKU — manual review needed):</strong><br>' + poConflicts.map(r => r.poNumber + ' — expected SKU ' + r.sku + ' but PO is linked to "' + r.existingPoSku + '"').join('<br>') + '<br><br>' : '') +
-        (failed.length ? '<strong>Failed (not written, safe to retry):</strong><br>' + failed.map(r => r.sku + ' — ' + r.n + ' — [' + r.stage + '] ' + r.error).join('<br>') : '');
-      btn.textContent = 'Batch 1 Run Complete';
+        '<strong>Batch 1 result — ' + buckets.created.length + ' created, ' + buckets.po_recovered.length + ' PO-recovered, ' +
+        buckets.product_recovered.length + ' product-recovered, ' + buckets.skipped.length + ' skipped (already complete), ' +
+        buckets.conflict.length + ' conflicts (manual review), ' + buckets.supplier_unresolved.length + ' supplier-unresolved, ' +
+        buckets.invalid_item.length + ' invalid, ' + buckets.failed.length + ' failed.</strong><br><br>' +
+        '<strong>Suppliers:</strong><br>' + setup.supplierReport.map(escapeHtml).join('<br>') + '<br><br>' +
+        list('Created (product + PO, one transaction):', buckets.created, plain) +
+        list('PO recovered (product already existed, missing PO created):', buckets.po_recovered, plain) +
+        list('Product recovered (PO already existed, missing product created):', buckets.product_recovered, plain) +
+        list('Skipped (product + PO both already correct, untouched):', buckets.skipped, plain) +
+        list('Conflicts (nothing written — manual review needed):', buckets.conflict, r => plain(r) + '<br>' + describeFlags(r.flags)) +
+        list('Supplier unresolved (nothing written for these):', buckets.supplier_unresolved, r => escapeHtml(r.sku + ' — ' + r.n + ' — ' + r.reason)) +
+        list('Invalid item definitions (nothing written):', buckets.invalid_item, r => plain(r) + '<br>' + describeFlags(r.flags)) +
+        list('Failed (see stage; run the read-only preflight / retry after review):', buckets.failed, r => escapeHtml(r.sku + ' — ' + r.n + ' — [' + r.stage + '] ' + r.error));
       loadProductsFromFirestore();
       loadSuppliers();
       loadPurchaseOrders();
     }catch(err){
-      resultBox.innerHTML = '<strong>Import failed before completing:</strong> ' + err.message;
+      resultBox.innerHTML = '<strong>Import failed before completing:</strong> ' + escapeHtml(err && err.message ? err.message : err);
     }finally{
       btn.disabled = false;
       btn.textContent = 'Import Batch 1 — 40 New SKUs (5 already live, skipped automatically)';
@@ -1663,7 +1622,7 @@
 
     const supplierKeys = new Set(BATCH1_SUPPLIERS.map(s => s.key));
     const badSupplierKeys = BATCH1_SKUS.filter(i => !supplierKeys.has(i.supplierKey)).map(i => i.sku);
-    if(badSupplierKeys.length === 0){ lines.push('✓ Every item\\'s supplierKey resolves to a defined supplier.'); }
+    if(badSupplierKeys.length === 0){ lines.push('✓ Every item\'s supplierKey resolves to a defined supplier.'); }
     else { pass = false; lines.push('✗ Unresolved supplierKey on: ' + badSupplierKeys.join(', ')); }
 
     const hc = BATCH1_SKUS.find(i => i.sku === 'ML-HC-001');
@@ -1685,48 +1644,82 @@
     box.innerHTML = '<strong>' + (pass ? 'All offline checks passed.' : 'One or more offline checks FAILED — see below.') + '</strong><br>' + lines.join('<br>');
   }
 
-  // ===== Preflight: single-SKU live test, strictly allowlisted to ML-TWL-003 =====
-  const SINGLE_SKU_TEST_ALLOWLIST = ['ML-TWL-003'];
-  async function importSingleSkuTest(){
+  // ===== Preflight: read-only check of ML-TWL-003 (reads only; never creates a supplier) =====
+  async function runSingleSkuPreflight(){
     if(!db){ alert('Firebase isn\'t connected yet.'); return; }
     const box = document.getElementById('preflightResultBox');
     box.style.display = 'block';
-
-    const targets = BATCH1_SKUS.filter(i => SINGLE_SKU_TEST_ALLOWLIST.includes(i.sku));
-    if(targets.length !== 1 || targets[0].sku !== 'ML-TWL-003'){
-      box.innerHTML = '<strong>Test aborted — allowlist validation failed.</strong> Expected exactly one match for ML-TWL-003, found ' + targets.length + '. No Firestore calls were made.';
-      return;
-    }
-    const item = targets[0];
-    const expected = {poNumber:'ML-PO-007', supplierKey:'jinzhou', quantity:1, reorderLevel:5, costPrice:37.17, wholesalePrice:56, price:74};
-    const mismatches = Object.keys(expected).filter(k => item[k] !== expected[k]);
-    if(mismatches.length){
-      box.innerHTML = '<strong>Test aborted — ML-TWL-003 field mismatch on: ' + mismatches.join(', ') + '.</strong> No Firestore calls were made. Fix BATCH1_SKUS before retrying.';
-      return;
-    }
-
-    box.innerHTML = '<strong>Allowlist verified — running live single-SKU test for ML-TWL-003 only.</strong>';
+    if(importSafetyMissing(box)) return;
+    const candidate = BATCH1_SKUS.find(i => i.sku === 'ML-TWL-003');
+    box.innerHTML = '<strong>Running read-only preflight for ML-TWL-003…</strong>';
     try{
-      const supplierDef = BATCH1_SUPPLIERS.find(s => s.key === 'jinzhou');
-      const {supplierIdByKey, supplierReport} = await setUpBatch1Suppliers([supplierDef]);
-      const result = await resolveBatch1Item(item, supplierIdByKey);
-
-      let outcome;
-      if(result.action === 'created') outcome = 'Created — new product doc "ML-TWL-003" and new PO doc "ML-PO-007".';
-      else if(result.action === 'po_recovered') outcome = 'PO recovered — product "ML-TWL-003" already existed and matched; missing PO "ML-PO-007" was created.';
-      else if(result.action === 'skipped') outcome = 'Skipped — both product "ML-TWL-003" and PO "ML-PO-007" already existed and matched. Nothing written.';
-      else if(result.action === 'conflict') outcome = 'CONFLICT — a product with SKU ML-TWL-003 already exists under the name "' + result.existingName + '" (doc ' + result.existingDocId + '). Nothing written.';
-      else if(result.action === 'po_conflict') outcome = 'PO CONFLICT — PO "ML-PO-007" already exists but is linked to a different SKU ("' + result.existingPoSku + '"). Nothing written.';
-      else outcome = 'FAILED at stage "' + result.stage + '": ' + result.error;
-
-      box.innerHTML = '<strong>Single-SKU test result:</strong><br>' + outcome + '<br><br><strong>Supplier:</strong><br>' + supplierReport.join('<br>') +
-        '<br><br>Verify manually: product doc ID "ML-TWL-003" (price 74, wholesale 56, cost 37.17, quantity 1, reorderLevel 5, supplierRef linked to Jinzhou Wangdihao Towel Factory) and PO doc ID "ML-PO-007" (sku ML-TWL-003, qty 1, unitCost 37.17). Also check the live storefront shows this item In Stock at GHC 74.00.';
-      loadProductsFromFirestore();
-      loadSuppliers();
-      loadPurchaseOrders();
+      const r = await ImportSafety.preflightSingleSku(db, candidate ? [candidate] : [], batch1Context());
+      const lines = [];
+      lines.push('<strong>' + (r.safeToWrite ? 'Preflight clean — no blockers found. This is NOT permission to write; every import write path is disabled.' : 'Preflight BLOCKED — blockers found. Do not write; every import write path is disabled.') + '</strong>');
+      lines.push('This preflight performed reads only; nothing was written.');
+      if(r.plan) lines.push('Plan if run: ' + escapeHtml(r.plan));
+      if(r.supplier) lines.push('Supplier "' + escapeHtml(r.supplier.name) + '": ' + escapeHtml(r.supplier.state) + (r.supplier.id ? ' (' + escapeHtml(r.supplier.id) + ')' : ''));
+      if(r.product){
+        lines.push('Product doc ML-TWL-003: ' + (r.product.exists ? 'exists — name "' + escapeHtml(r.product.n) + '", sku field "' + escapeHtml(r.product.sku) + '", supplierRef ' + escapeHtml(r.product.supplierRef) : 'missing'));
+      }
+      if(r.purchaseOrder){
+        lines.push('PO doc ML-PO-007: ' + (r.purchaseOrder.exists ? 'exists — sku "' + escapeHtml(r.purchaseOrder.sku) + '", productRef "' + escapeHtml(r.purchaseOrder.productRef) + '", supplierRef ' + escapeHtml(r.purchaseOrder.supplierRef) : 'missing'));
+      }
+      if(r.otherProductsWithSku.length) lines.push('Other product docs carrying this SKU: ' + escapeHtml(r.otherProductsWithSku.join(', ')));
+      if(r.otherPosWithSku.length) lines.push('Other PO docs carrying this SKU: ' + escapeHtml(r.otherPosWithSku.join(', ')));
+      if(r.blockers.length) lines.push('<strong>Blockers:</strong>' + r.blockers.map(escapeHtml).join('<br>'));
+      if(r.notes.length) lines.push('<strong>Notes:</strong>' + r.notes.map(escapeHtml).join('<br>'));
+      box.innerHTML = lines.join('<br>');
     }catch(err){
-      box.innerHTML = '<strong>Single-SKU test failed:</strong> ' + err.message;
+      box.innerHTML = '<strong>Preflight failed to run:</strong> ' + escapeHtml(err && err.message ? err.message : err) + '<br>It performs reads only, so no data was changed.';
     }
+  }
+
+  // ===== Single-SKU live test, strictly allowlisted to ML-TWL-003 =====
+  // Allowlist and Commander-confirmed values are enforced inside ImportSafety.runSingleSkuImport,
+  // which refuses before any Firestore access if the item list is not exactly [ML-TWL-003].
+  async function importSingleSkuTest(){
+    if(IMPORT_WRITES_CONTAINED){ showImportBlocked('preflightResultBox'); return; }
+    if(!db){ alert('Firebase isn\'t connected yet.'); return; }
+    const box = document.getElementById('preflightResultBox');
+    box.style.display = 'block';
+    if(importSafetyMissing(box)) return;
+
+    const candidate = BATCH1_SKUS.find(i => i.sku === 'ML-TWL-003');
+    box.innerHTML = '<strong>Running single-SKU test for ML-TWL-003 (read-only preflight first, then guarded write)…</strong>';
+    let outcome;
+    try{
+      outcome = await ImportSafety.runSingleSkuImport(db, candidate ? [candidate] : [], batch1Context());
+    }catch(err){
+      const noCalls = !!(err && err.code === 'ALLOWLIST_VIOLATION');
+      box.innerHTML = '<strong>Test aborted:</strong> ' + escapeHtml(err && err.message ? err.message : err) + '<br>' +
+        (noCalls ? 'No Firestore calls were made.' : 'Firestore state is unknown — run the read-only preflight to inspect it before retrying.');
+      return;
+    }
+
+    if(outcome.stage === 'preflight'){
+      box.innerHTML = '<strong>Single-SKU test blocked by the read-only preflight — nothing was written.</strong><br>' +
+        outcome.preflight.blockers.map(escapeHtml).join('<br>');
+      return;
+    }
+
+    const r = outcome.result;
+    let text;
+    if(r.action === 'created') text = 'Created — product doc "ML-TWL-003" and PO doc "ML-PO-007" written in one transaction.';
+    else if(r.action === 'po_recovered') text = 'PO recovered — product "ML-TWL-003" already existed and matched; missing PO "ML-PO-007" was created.';
+    else if(r.action === 'product_recovered') text = 'Product recovered — PO "ML-PO-007" already existed and matched; missing product "ML-TWL-003" was created.';
+    else if(r.action === 'skipped') text = 'Skipped — product "ML-TWL-003" and PO "ML-PO-007" already existed and matched. Nothing written.';
+    else if(r.action === 'conflict') text = 'CONFLICT — nothing written.<br>' + describeFlags(r.flags);
+    else if(r.action === 'supplier_unresolved') text = 'SUPPLIER NOT RESOLVED — nothing was written to products or purchase orders: ' + escapeHtml(r.reason);
+    else text = 'FAILED at stage "' + escapeHtml(r.stage) + '": ' + escapeHtml(r.error) + '<br>Run the read-only preflight to inspect the current state before retrying.';
+
+    singleSkuLiveVerified = !!outcome.ok;
+    const supplierLines = (outcome.supplier && outcome.supplier.supplierReport) ? outcome.supplier.supplierReport.map(escapeHtml).join('<br>') : '';
+    box.innerHTML = '<strong>Single-SKU test result:</strong><br>' + text + '<br><br><strong>Supplier:</strong><br>' + supplierLines +
+      '<br><br>Verify manually: product doc ID "ML-TWL-003" (price 74, wholesale 56, cost 37.17, quantity 1, reorderLevel 5, supplierRef linked to Jinzhou Wangdihao Towel Factory) and PO doc ID "ML-PO-007" (sku ML-TWL-003, productRef ML-TWL-003, qty 1, unitCost 37.17). Also check the live storefront shows this item In Stock at GHC 74.00.';
+    loadProductsFromFirestore();
+    loadSuppliers();
+    loadPurchaseOrders();
   }
 
   // ===== Customer leads (newsletter + wholesale signups) =====
@@ -1740,7 +1733,7 @@
       }, err => {
         console.warn('Leads load failed:', err);
         const el = document.getElementById('leadsList');
-        if(el) el.innerHTML = '<p style="font-size:0.85rem; color:rgba(23,20,18,0.5);">Could not load signups: ' + err.message + '</p>';
+        if(el) el.innerHTML = '<p style="font-size:0.85rem; color:rgba(23,20,18,0.5);">Could not load signups: ' + RS.esc(err.message) + '</p>';
       });
   }
   function renderLeadsList(){
@@ -1750,9 +1743,9 @@
     el.innerHTML = LEADS.map(l => `
       <div class="admin-row">
         <div>
-          <strong>${l.name || l.email || 'Unknown'}</strong>
-          ${l.email ? `<span class="price">${l.email}</span>` : ''}
-          ${l.phone ? ` · ${l.phone}` : ''}
+          <strong>${esc(l.name || l.email || 'Unknown')}</strong>
+          ${l.email ? `<span class="price">${esc(l.email)}</span>` : ''}
+          ${l.phone ? ` · ${esc(l.phone)}` : ''}
           <span class="demo-tag">${l.source === 'wholesale' ? 'wholesale' : 'newsletter'}</span>
         </div>
       </div>`).join('');
@@ -1787,7 +1780,7 @@
       }, err => {
         console.warn('Orders load failed:', err);
         const el = document.getElementById('ordersList');
-        if(el) el.innerHTML = '<p style="font-size:0.85rem; color:rgba(23,20,18,0.5);">Could not load orders: ' + err.message + '</p>';
+        if(el) el.innerHTML = '<p style="font-size:0.85rem; color:rgba(23,20,18,0.5);">Could not load orders: ' + RS.esc(err.message) + '</p>';
       });
   }
   function renderOrdersList(){
@@ -1795,19 +1788,20 @@
     if(!el) return;
     if(ORDERS.length === 0){ el.innerHTML = '<p style="font-size:0.85rem; color:rgba(23,20,18,0.5);">No orders yet.</p>'; return; }
     el.innerHTML = ORDERS.map(o => {
-      const itemsText = (o.items||[]).map(it => `${it.name}${formatItemOptions(it)} x${it.qty}`).join(', ');
+      const items = Array.isArray(o.items) ? o.items : [];
+      const itemsText = items.map(it => { it = it || {}; return `${esc(it.name)}${esc(formatItemOptions(it))} x${esc(it.qty)}`; }).join(', ');
       const date = o.createdAt ? new Date(o.createdAt).toLocaleDateString() : '';
       const status = o.status || 'pending';
       const payStatus = o.paymentStatus || 'unpaid';
       return `
       <div class="admin-row" style="align-items:flex-start;">
         <div>
-          <strong>${o.customerName || 'Unknown'}</strong> <span class="price">GHC ${(o.total||0).toFixed(2)}</span>
+          <strong>${esc(o.customerName || 'Unknown')}</strong> ${orderTotalHtml(o)}
           <span class="demo-tag">${o.channel === 'paystack' ? 'paid via Paystack' : 'via WhatsApp'}</span>
-          <span class="status-badge status-${status}">${status}</span>
-          <span class="status-badge status-${payStatus}">${payStatus}</span><br>
-          <span style="font-size:0.78rem; color:rgba(23,20,18,0.6);">${o.phone || ''} · ${o.address || ''}</span><br>
-          <span style="font-size:0.78rem; color:rgba(23,20,18,0.5);">${itemsText} — ${date}</span>
+          <span class="status-badge status-${safeClass(status, ORDER_STATUSES, 'unknown')}">${esc(status)}</span>
+          <span class="status-badge status-${safeClass(payStatus, PAY_STATUSES, 'unknown')}">${esc(payStatus)}</span><br>
+          <span style="font-size:0.78rem; color:rgba(23,20,18,0.6);">${esc(o.phone || '')} · ${esc(o.address || '')}</span><br>
+          <span style="font-size:0.78rem; color:rgba(23,20,18,0.5);">${itemsText} — ${esc(date)}</span>
         </div>
       </div>`;
     }).join('');
@@ -1831,19 +1825,21 @@
     if(ORDERS.length === 0){ el.innerHTML = '<p style="font-size:0.85rem; color:rgba(23,20,18,0.5);">No orders yet.</p>'; return; }
     el.innerHTML = ORDERS.map(o => {
       const date = o.createdAt ? new Date(o.createdAt).toLocaleString() : '';
-      const itemsHtml = (o.items||[]).map(it => `${it.name}${formatItemOptions(it)} × ${it.qty} — GHC ${((it.price||0)*(it.qty||1)).toFixed(2)}`).join('<br>');
+      const items = Array.isArray(o.items) ? o.items : [];
+      const itemsHtml = items.map(it => { it = it || {}; const lt = lineTotalOrNull(it); return `${esc(it.name)}${esc(formatItemOptions(it))} × ${esc(it.qty)} — ${lt === null ? 'Invalid amount' : money(lt)}`; }).join('<br>');
       const status = o.status || 'pending';
       const payStatus = o.paymentStatus || 'unpaid';
+      const id = esc(o.docId);
       return `
       <div class="order-detail-card">
-        <strong>${o.customerName || 'Unknown'}</strong> <span class="price">GHC ${(o.total||0).toFixed(2)}</span>
+        <strong>${esc(o.customerName || 'Unknown')}</strong> ${orderTotalHtml(o)}
         <span class="demo-tag">${o.channel === 'paystack' ? 'paid via Paystack' : 'via WhatsApp'}</span>
-        <span class="status-badge status-${status}">${status}</span>
-        <span class="status-badge status-${payStatus}">${payStatus}</span>
-        <div style="font-size:0.82rem; color:rgba(23,20,18,0.65); margin-top:6px;">${o.phone || ''} · ${o.address || ''}</div>
+        <span class="status-badge status-${safeClass(status, ORDER_STATUSES, 'unknown')}">${esc(status)}</span>
+        <span class="status-badge status-${safeClass(payStatus, PAY_STATUSES, 'unknown')}">${esc(payStatus)}</span>
+        <div style="font-size:0.82rem; color:rgba(23,20,18,0.65); margin-top:6px;">${esc(o.phone || '')} · ${esc(o.address || '')}</div>
         <div class="items-list">${itemsHtml}</div>
-        <div style="font-size:0.76rem; color:rgba(23,20,18,0.45);">${date}</div>
-        <select class="status-select" onchange="updateOrderStatus('${o.docId}', this.value)">
+        <div style="font-size:0.76rem; color:rgba(23,20,18,0.45);">${esc(date)}</div>
+        <select class="status-select" data-act="order-status" data-id="${id}">
           <option value="pending" ${status==='pending'?'selected':''}>Pending</option>
           <option value="confirmed" ${status==='confirmed'?'selected':''}>Confirmed</option>
           <option value="shipped" ${status==='shipped'?'selected':''}>Shipped</option>
@@ -1851,10 +1847,10 @@
           <option value="cancelled" ${status==='cancelled'?'selected':''}>Cancelled</option>
         </select>
         <div class="order-detail-actions">
-          <button onclick="notifyCustomer('${o.docId}')">Notify Customer</button>
-          <button onclick="openInvoice('${o.docId}')">Print Invoice</button>
-          ${o.paymentStatus !== 'paid' ? `<button onclick="convertOrderToDebtor('${o.docId}')">Add as Debtor</button>` : ''}
-          <button class="danger" onclick="deleteOrder('${o.docId}')">Delete Order</button>
+          <button data-act="order-notify" data-id="${id}">Notify Customer</button>
+          <button data-act="order-invoice" data-id="${id}">Print Invoice</button>
+          ${o.paymentStatus !== 'paid' ? `<button data-act="order-debtor" data-id="${id}">Add as Debtor</button>` : ''}
+          <button class="danger" data-act="order-delete" data-id="${id}">Delete Order</button>
         </div>
       </div>`;
     }).join('');
@@ -1876,6 +1872,7 @@
   function notifyCustomer(docId){
     const o = ORDERS.find(x => x.docId === docId);
     if(!o) return;
+    if(!orderTotalValid(o)){ alert('This order has an invalid total, so nothing was prepared.'); return; }
     const status = o.status || 'pending';
     const line = STATUS_MESSAGES[status] || ('updated to: ' + status);
     const msg = `Hi ${o.customerName || ''}, this is MLuna Shop. Your order (Total: GHC ${(o.total||0).toFixed(2)}) is now ${line}.`;
@@ -1888,7 +1885,8 @@
     const rows = [];
     ORDERS.forEach(o => {
       const date = o.createdAt ? new Date(o.createdAt).toLocaleDateString() : '';
-      (o.items||[]).forEach(it => {
+      (Array.isArray(o.items) ? o.items : []).forEach(it => {
+        if(!it) return;
         const colorVal = it.color || (it.options && (it.options.Colour || it.options.colour || it.options.Color));
         if(colorVal){
           rows.push({customer:o.customerName||'Unknown', phone:o.phone||'', name:it.name, color:colorVal, qty:it.qty, image:it.image||null, date:date});
@@ -1896,16 +1894,16 @@
       });
     });
     if(rows.length === 0){ el.innerHTML = '<p style="font-size:0.85rem; color:rgba(23,20,18,0.5);">No colour-specific orders yet.</p>'; return; }
-    el.innerHTML = rows.map(r => `
+    el.innerHTML = rows.map(r => { const iu = RS.safeUrl(r.image); return `
       <div class="admin-row">
         <div class="admin-row-left">
-          ${r.image ? `<img src="${r.image}" alt="">` : ''}
+          ${iu ? `<img src="${esc(iu)}" alt="">` : ''}
           <div>
-            <strong>${r.name}</strong> <span class="demo-tag">${r.color}</span><br>
-            <span style="font-size:0.78rem; color:rgba(23,20,18,0.6);">${r.customer} · ${r.phone} · qty ${r.qty} · ${r.date}</span>
+            <strong>${esc(r.name)}</strong> <span class="demo-tag">${esc(r.color)}</span><br>
+            <span style="font-size:0.78rem; color:rgba(23,20,18,0.6);">${esc(r.customer)} · ${esc(r.phone)} · qty ${esc(r.qty)} · ${esc(r.date)}</span>
           </div>
         </div>
-      </div>`).join('');
+      </div>`; }).join('');
   }
 
   function renderAdminList(){
@@ -1913,37 +1911,38 @@
     if(!el) return;
     let html = '';
     for(const cat in PRODUCTS){
-      const label = CATEGORY_LABELS[cat] || customCategoryLabels[cat] || cat;
-      html += `<h3 class="admin-cat-head">${label}</h3>`;
+      const catA = esc(cat);
+      html += `<h3 class="admin-cat-head">${esc(catLabel(cat))}</h3>`;
       PRODUCTS[cat].forEach((p,i) => {
-        const cover = (p.images && p.images[0]) ? p.images[0] : null;
+        const cover = RS.safeUrl((p.images && p.images[0]) ? p.images[0] : null);
         const hasOptions = p.optionGroups && p.optionGroups.length;
         const statusTag = p.status === 'out_of_stock' ? '<span class="demo-tag oos">Out of Stock</span>'
           : p.status === 'coming_soon' ? '<span class="demo-tag">Coming Soon</span>' : '';
         const archivedTag = p.archived ? '<span class="demo-tag oos">Archived</span>' : '';
-        const qtyTag = (!hasOptions && p.quantity !== null && p.quantity !== undefined) ? `<span class="demo-tag">Qty: ${p.quantity}</span>` : '';
-        const skuTag = p.sku ? `<span class="sku-tag">${p.sku.replace(/</g,'&lt;')}</span>` : '';
-        const priceStatusTag = p.priceStatus ? `<span class="pricestatus-badge pricestatus-${p.priceStatus}">${p.priceStatus.replace(/_/g,' ')}</span>` : '';
+        const qtyTag = (!hasOptions && p.quantity !== null && p.quantity !== undefined) ? `<span class="demo-tag">Qty: ${esc(p.quantity)}</span>` : '';
+        const skuTag = p.sku ? `<span class="sku-tag">${esc(p.sku)}</span>` : '';
+        const priceStatusTag = p.priceStatus ? `<span class="pricestatus-badge pricestatus-${safeClass(p.priceStatus, PRICE_STATUSES, 'unknown')}">${esc(String(p.priceStatus).replace(/_/g,' '))}</span>` : '';
         const supplierLabel = p.supplierRef ? supplierNameById(p.supplierRef) : null;
-        const supplierTag = supplierLabel ? `<span class="demo-tag">${supplierLabel.replace(/</g,'&lt;')}</span>` : '';
+        const supplierTag = supplierLabel ? `<span class="demo-tag">${esc(supplierLabel)}</span>` : '';
         const workbookTag = p.importedFromWorkbook ? '<span class="demo-tag">from workbook</span>' : '';
         const unverifiedTag = (p.stockVerified === false) ? '<span class="stockunverified-tag">Unverified — Confirm Stock</span>' : '';
-        const auditTag = p.auditNote ? `<span class="auditnote-tag" title="${p.auditNote.replace(/"/g,'&quot;')}">⚠ Audit Note</span>` : '';
+        const auditTag = p.auditNote ? `<span class="auditnote-tag" title="${esc(p.auditNote)}">⚠ Audit Note</span>` : '';
 
         let comboListHtml = '';
         if(hasOptions){
           const comboKeys = Object.keys(p.comboStock || {});
           if(comboKeys.length){
             comboListHtml = `<div class="combo-admin-list">` + comboKeys.map(k => {
-              const label2 = k.split('|').map(part => part.split(':')[1]).join(' / ');
-              const qty = p.comboStock[k];
+              const label2 = esc(k.split('|').map(part => part.split(':')[1]).join(' / '));
+              const qty = RS.num(p.comboStock[k]);
               const disabledAttr = p.docId ? '' : 'disabled';
+              const qtyText = qty === null ? ' — <strong style="color:#7a3b2a;">Invalid stock value</strong>' : (qty <= 0 ? ' — <strong style="color:#7a3b2a;">Out of Stock</strong>' : ' — Qty: ' + qty);
               return `
               <div class="combo-admin-row">
-                <span>${label2}${qty<=0 ? ' — <strong style="color:#7a3b2a;">Out of Stock</strong>' : ' — Qty: '+qty}</span>
+                <span>${label2}${qtyText}</span>
                 <span class="qty-adjust">
-                  <button ${disabledAttr} onclick="adjustComboQty('${cat}',${i},'${k.replace(/'/g,"\\'")}',-1)">−</button>
-                  <button ${disabledAttr} onclick="adjustComboQty('${cat}',${i},'${k.replace(/'/g,"\\'")}',1)">+</button>
+                  <button ${disabledAttr} data-act="combo-adjust" data-cat="${catA}" data-i="${i}" data-key="${esc(k)}" data-delta="-1">−</button>
+                  <button ${disabledAttr} data-act="combo-adjust" data-cat="${catA}" data-i="${i}" data-key="${esc(k)}" data-delta="1">+</button>
                 </span>
               </div>`;
             }).join('') + `</div>`;
@@ -1954,9 +1953,9 @@
         <div class="admin-row${p.archived ? ' archived' : ''}">
           <div class="admin-row-top">
             <div class="admin-row-left">
-              ${cover ? `<img src="${cover}" alt="">` : ''}
+              ${cover ? `<img src="${esc(cover)}" alt="">` : ''}
               <div>
-                <strong>${p.n}</strong>${skuTag} <span class="price">GHC ${p.price.toFixed(2)}</span>
+                <strong>${esc(p.n)}</strong>${skuTag} <span class="price">${money(p.price)}</span>
                 ${p.images && p.images.length > 1 ? `<span class="demo-tag">${p.images.length} photos</span>` : ''}
                 ${p.variants && p.variants.length ? `<span class="demo-tag">${p.variants.length} colours</span>` : ''}
                 ${hasOptions ? `<span class="demo-tag">${p.optionGroups.length} option groups</span>` : ''}
@@ -1965,15 +1964,15 @@
               </div>
             </div>
             <div class="admin-row-actions">
-              ${p.docId ? `<select onchange="updateProductStatus('${cat}',${i}, this.value)">
+              ${p.docId ? `<select data-act="product-status" data-cat="${catA}" data-i="${i}">
                 <option value="in_stock" ${(!p.status||p.status==='in_stock')?'selected':''}>In Stock</option>
                 <option value="out_of_stock" ${p.status==='out_of_stock'?'selected':''}>Out of Stock</option>
                 <option value="coming_soon" ${p.status==='coming_soon'?'selected':''}>Coming Soon</option>
               </select>` : ''}
-              ${(!hasOptions && p.docId) ? `<span class="qty-adjust"><button onclick="adjustQuantity('${cat}',${i},-1)">−</button><button onclick="adjustQuantity('${cat}',${i},1)">+</button></span>` : ''}
-              <button onclick="editProduct('${cat}',${i})">Edit</button>
-              ${p.docId ? `<button onclick="toggleArchiveProduct('${cat}',${i})">${p.archived ? 'Unarchive' : 'Archive'}</button>` : ''}
-              <button class="danger" onclick="deleteProduct('${cat}',${i})">Delete</button>
+              ${(!hasOptions && p.docId) ? `<span class="qty-adjust"><button data-act="product-qty" data-cat="${catA}" data-i="${i}" data-delta="-1">−</button><button data-act="product-qty" data-cat="${catA}" data-i="${i}" data-delta="1">+</button></span>` : ''}
+              <button data-act="product-edit" data-cat="${catA}" data-i="${i}">Edit</button>
+              ${p.docId ? `<button data-act="product-archive" data-cat="${catA}" data-i="${i}">${p.archived ? 'Unarchive' : 'Archive'}</button>` : ''}
+              <button class="danger" data-act="product-delete" data-cat="${catA}" data-i="${i}">Delete</button>
             </div>
           </div>
           ${comboListHtml}
@@ -1994,7 +1993,7 @@
       }, err => {
         console.warn('Reviews load failed:', err);
         const el = document.getElementById('reviewsAdminList');
-        if(el) el.innerHTML = '<p style="font-size:0.85rem; color:rgba(23,20,18,0.5);">Could not load reviews: ' + err.message + '</p>';
+        if(el) el.innerHTML = '<p style="font-size:0.85rem; color:rgba(23,20,18,0.5);">Could not load reviews: ' + RS.esc(err.message) + '</p>';
       });
   }
   function renderReviewsAdminList(){
@@ -2004,20 +2003,23 @@
     el.innerHTML = REVIEWS_ADMIN.map(r => {
       const date = r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '';
       const status = r.status || 'pending';
+      const rt = RS.rating(r.rating);
+      const stars = rt === null ? '<span class="demo-tag oos">Invalid rating</span>' : '★'.repeat(rt) + '☆'.repeat(5-rt);
+      const id = esc(r.docId);
       return `
       <div class="review-admin-card">
-        <div class="stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
-        <div class="comment">"${(r.comment||'').replace(/</g,'&lt;')}"</div>
+        <div class="stars">${stars}</div>
+        <div class="comment">"${esc(r.comment||'')}"</div>
         <div style="font-size:0.78rem; color:rgba(23,20,18,0.55);">
-          <strong>${(r.name||'Unknown').replace(/</g,'&lt;')}</strong>${r.product ? ' — on '+r.product.replace(/</g,'&lt;') : ''} · ${date}
-          <span class="status-badge status-${status}">${status}</span>
+          <strong>${esc(r.name||'Unknown')}</strong>${r.product ? ' — on '+esc(r.product) : ''} · ${esc(date)}
+          <span class="status-badge status-${safeClass(status, REVIEW_STATUSES, 'unknown')}">${esc(status)}</span>
           ${r.featured ? '<span class="demo-tag">featured</span>' : ''}
         </div>
         <div class="order-detail-actions" style="margin-top:10px;">
-          ${status !== 'approved' ? `<button onclick="setReviewStatus('${r.docId}','approved')">Approve</button>` : ''}
-          ${status !== 'rejected' ? `<button onclick="setReviewStatus('${r.docId}','rejected')">Reject</button>` : ''}
-          <button onclick="toggleFeatureReview('${r.docId}', ${!!r.featured})">${r.featured ? 'Unfeature' : 'Feature'}</button>
-          <button class="danger" onclick="deleteReviewAdmin('${r.docId}')">Delete</button>
+          ${status !== 'approved' ? `<button data-act="review-status" data-id="${id}" data-status="approved">Approve</button>` : ''}
+          ${status !== 'rejected' ? `<button data-act="review-status" data-id="${id}" data-status="rejected">Reject</button>` : ''}
+          <button data-act="review-feature" data-id="${id}" data-featured="${!!r.featured}">${r.featured ? 'Unfeature' : 'Feature'}</button>
+          <button class="danger" data-act="review-delete" data-id="${id}">Delete</button>
         </div>
       </div>`;
     }).join('');
@@ -2052,19 +2054,21 @@
   }
   function renderInvoiceContent(o){
     const date = o.createdAt ? new Date(o.createdAt).toLocaleString() : '';
-    const invNo = generateInvoiceNumber(o);
-    const itemsRows = (o.items||[]).map(it => {
+    const invNo = esc(generateInvoiceNumber(o));
+    const itemsRows = (Array.isArray(o.items) ? o.items : []).map(it => {
+      it = it || {};
+      const lt = lineTotalOrNull(it);
       const opts = formatItemOptions(it).replace(/^\s*\(|\)\s*$/g,'');
       return `
       <tr>
-        <td>${(it.name||'').replace(/</g,'&lt;')}${opts?' — '+opts.replace(/</g,'&lt;'):''}</td>
-        <td style="text-align:center;">${it.qty}</td>
-        <td style="text-align:right;">GHC ${(it.price||0).toFixed(2)}</td>
-        <td style="text-align:right;">GHC ${((it.price||0)*(it.qty||1)).toFixed(2)}</td>
+        <td>${esc(it.name)}${opts ? ' — '+esc(opts) : ''}</td>
+        <td style="text-align:center;">${esc(it.qty)}</td>
+        <td style="text-align:right;">${money(it.price)}</td>
+        <td style="text-align:right;">${lt === null ? 'Invalid amount' : money(lt)}</td>
       </tr>`;
     }).join('');
     const paymentMethod = o.paymentMethod || 'Not yet recorded';
-    const paymentStatus = (o.paymentStatus || 'unpaid').toUpperCase();
+    const paymentStatus = String(o.paymentStatus || 'unpaid').toUpperCase();
     document.getElementById('invoiceArea').innerHTML = `
       <div class="invoice-header">
         <img src="assets/logo.png" alt="MLuna Shop">
@@ -2075,25 +2079,25 @@
       </div>
       <div class="invoice-meta">
         <div><strong>Invoice:</strong> ${invNo}</div>
-        <div><strong>Date:</strong> ${date}</div>
+        <div><strong>Date:</strong> ${esc(date)}</div>
       </div>
       <div class="invoice-meta">
-        <div><strong>Customer:</strong> ${(o.customerName||'').replace(/</g,'&lt;')}</div>
-        <div><strong>Phone:</strong> ${(o.phone||'').replace(/</g,'&lt;')}</div>
-        <div><strong>Delivery:</strong> ${(o.address||'').replace(/</g,'&lt;')}</div>
+        <div><strong>Customer:</strong> ${esc(o.customerName||'')}</div>
+        <div><strong>Phone:</strong> ${esc(o.phone||'')}</div>
+        <div><strong>Delivery:</strong> ${esc(o.address||'')}</div>
       </div>
       <table class="invoice-table">
         <thead><tr><th>Item</th><th>Qty</th><th>Unit</th><th>Total</th></tr></thead>
         <tbody>${itemsRows}</tbody>
       </table>
       <div class="invoice-totals">
-        <div><span>Subtotal</span><span>GHC ${(o.subtotal||0).toFixed(2)}</span></div>
-        <div><span>Delivery</span><span>GHC ${(o.delivery||0).toFixed(2)}</span></div>
-        <div class="grand"><span>Total</span><span>GHC ${(o.total||0).toFixed(2)}</span></div>
+        <div><span>Subtotal</span><span>${money(o.subtotal)}</span></div>
+        <div><span>Delivery</span><span>${money(o.delivery)}</span></div>
+        <div class="grand"><span>Total</span><span>${money(o.total)}</span></div>
       </div>
       <div class="invoice-meta" style="margin-top:12px;">
-        <div><strong>Payment Method:</strong> ${paymentMethod}</div>
-        <div><strong>Payment Status:</strong> ${paymentStatus}</div>
+        <div><strong>Payment Method:</strong> ${esc(paymentMethod)}</div>
+        <div><strong>Payment Status:</strong> ${esc(paymentStatus)}</div>
       </div>
       <p class="invoice-footer">Thank you for shopping with MLuna Shop — African Heritage, Timeless Elegance.</p>
     `;
@@ -2148,26 +2152,38 @@
     if(!el) return;
     const {start, end} = getAnalyticsDateBounds();
     const inRange = ORDERS.filter(o => o.createdAt >= start && o.createdAt < end && o.status !== 'cancelled');
-    const totalOrders = inRange.length;
-    const totalRevenue = inRange.reduce((s,o) => s + (o.total||0), 0);
+    const priced = inRange.filter(orderTotalValid);
+    const invalidOrders = inRange.length - priced.length;
+    let invalidLines = 0;
+    const totalOrders = priced.length;
+    const totalRevenue = priced.reduce((s,o) => s + o.total, 0);
     const avgOrder = totalOrders ? totalRevenue / totalOrders : 0;
     let itemsSold = 0;
-    const salesByProduct = {};
-    inRange.forEach(o => {
-      (o.items||[]).forEach(it => {
-        itemsSold += (it.qty||0);
-        salesByProduct[it.name] = (salesByProduct[it.name]||0) + (it.qty||0);
+    const salesByProduct = new Map();
+    priced.forEach(o => {
+      (Array.isArray(o.items) ? o.items : []).forEach(it => {
+        const q = RS.num(it && it.qty);
+        if(q === null || q < 0 || !Number.isInteger(q)){ invalidLines++; return; }
+        itemsSold += q;
+        const name = String(it.name);
+        salesByProduct.set(name, (salesByProduct.get(name) || 0) + q);
       });
     });
     document.getElementById('statTotalOrders').textContent = totalOrders;
     document.getElementById('statTotalRevenue').textContent = 'GHC ' + totalRevenue.toFixed(2);
     document.getElementById('statAvgOrder').textContent = 'GHC ' + avgOrder.toFixed(2);
     document.getElementById('statItemsSold').textContent = itemsSold;
+    const note = document.getElementById('analyticsInvalidNote');
+    if(note){
+      const bad = invalidOrders + invalidLines;
+      note.style.display = bad ? 'block' : 'none';
+      note.textContent = bad ? ('Excluded from these figures: ' + invalidOrders + ' order(s) with an invalid total and ' + invalidLines + ' item line(s) with an invalid quantity.') : '';
+    }
 
-    const bestSellers = Object.entries(salesByProduct).sort((a,b) => b[1]-a[1]).slice(0,5);
+    const bestSellers = Array.from(salesByProduct.entries()).sort((a,b) => b[1]-a[1]).slice(0,5);
     const bsEl = document.getElementById('analyticsBestSellers');
     bsEl.innerHTML = bestSellers.length ? bestSellers.map(([name,qty],idx) => `
-      <div class="analytics-list-item" style="cursor:pointer;" onclick="jumpToProduct('${name.replace(/'/g,"\\'")}')"><span><span class="rank">#${idx+1}</span>${name.replace(/</g,'&lt;')}</span><span>${qty} sold</span></div>
+      <div class="analytics-list-item" style="cursor:pointer;" data-act="jump" data-name="${esc(name)}"><span><span class="rank">#${idx+1}</span>${esc(name)}</span><span>${qty} sold</span></div>
     `).join('') : '<p class="analytics-empty">No sales in this period yet.</p>';
 
     const lowStockItems = [];
@@ -2179,18 +2195,22 @@
         if(p.status === 'coming_soon') comingSoonItems.push({text:p.n, name:p.n});
         if(p.status === 'out_of_stock') outOfStockItems.push({text:p.n, name:p.n});
         if(p.optionGroups && p.optionGroups.length){
-          Object.entries(p.comboStock||{}).forEach(([k,qty]) => {
+          Object.entries(p.comboStock||{}).forEach(([k,rawQty]) => {
+            const qty = RS.num(rawQty);
             const label = k.split('|').map(part => part.split(':')[1]).join(' / ');
-            if(qty === 0) outOfStockItems.push({text:p.n + ' (' + label + ')', name:p.n});
-            else if(qty <= 5) lowStockItems.push({text:p.n + ' (' + label + ') — ' + qty + ' left', name:p.n});
+            if(qty === null) lowStockItems.push({text:p.n + ' (' + label + ') — invalid stock value', name:p.n});
+            else if(qty === 0) outOfStockItems.push({text:p.n + ' (' + label + ')', name:p.n});
+            else if(qty > 0 && qty <= 5) lowStockItems.push({text:p.n + ' (' + label + ') — ' + qty + ' left', name:p.n});
           });
         } else if(p.quantity !== null && p.quantity !== undefined){
-          if(p.quantity === 0 && p.status !== 'out_of_stock') outOfStockItems.push({text:p.n, name:p.n});
-          else if(p.quantity > 0 && p.quantity <= 5) lowStockItems.push({text:p.n + ' — ' + p.quantity + ' left', name:p.n});
+          const qty = RS.num(p.quantity);
+          if(qty === null) lowStockItems.push({text:p.n + ' — invalid stock value', name:p.n});
+          else if(qty === 0 && p.status !== 'out_of_stock') outOfStockItems.push({text:p.n, name:p.n});
+          else if(qty > 0 && qty <= 5) lowStockItems.push({text:p.n + ' — ' + qty + ' left', name:p.n});
         }
       });
     }
-    const renderClickList = (arr, emptyMsg) => arr.length ? arr.map(o => `<div class="analytics-list-item" style="cursor:pointer;" onclick="jumpToProduct('${o.name.replace(/'/g,"\\'")}')">${o.text.replace(/</g,'&lt;')}</div>`).join('') : `<p class="analytics-empty">${emptyMsg}</p>`;
+    const renderClickList = (arr, emptyMsg) => arr.length ? arr.map(o => `<div class="analytics-list-item" style="cursor:pointer;" data-act="jump" data-name="${esc(o.name)}">${esc(o.text)}</div>`).join('') : `<p class="analytics-empty">${emptyMsg}</p>`;
     document.getElementById('analyticsLowStock').innerHTML = renderClickList(lowStockItems, 'Nothing low on stock right now.');
     document.getElementById('analyticsOutOfStock').innerHTML = renderClickList(outOfStockItems, 'Nothing out of stock right now.');
     document.getElementById('analyticsComingSoon').innerHTML = renderClickList(comingSoonItems, 'No Coming Soon products right now.');
@@ -2198,7 +2218,7 @@
 
   // ===== Product Profitability =====
   function buildProductLookup(){
-    const lookup = {};
+    const lookup = Object.create(null);
     for(const cat in PRODUCTS){
       PRODUCTS[cat].forEach(p => {
         let stock;
@@ -2220,8 +2240,7 @@
     if(!sel) return;
     const current = sel.value;
     sel.innerHTML = '<option value="">All Categories</option>' + Object.keys(PRODUCTS).map(cat => {
-      const label = CATEGORY_LABELS[cat] || customCategoryLabels[cat] || cat;
-      return `<option value="${cat}">${label}</option>`;
+      return `<option value="${esc(cat)}">${esc(catLabel(cat))}</option>`;
     }).join('');
     sel.value = current;
   }
@@ -2265,14 +2284,17 @@
     const lookup = buildProductLookup();
     const inRange = ORDERS.filter(o => o.createdAt >= start && o.createdAt < end && o.status !== 'cancelled');
 
-    const stats = {};
+    const stats = Object.create(null);
+    profitInvalidLines = 0;
     inRange.forEach(o => {
-      const phone = (o.phone||'').trim();
-      (o.items||[]).forEach(it => {
-        const name = it.name;
-        if(!stats[name]) stats[name] = {sales:0, units:0, buyerCounts:{}};
-        stats[name].sales += (it.price||0) * (it.qty||0);
-        stats[name].units += (it.qty||0);
+      const phone = String(o.phone || '').trim();
+      (Array.isArray(o.items) ? o.items : []).forEach(it => {
+        const lt = lineTotalOrNull(it);
+        if(lt === null){ profitInvalidLines++; return; }
+        const name = String(it.name);
+        if(!stats[name]) stats[name] = {sales:0, units:0, buyerCounts:Object.create(null)};
+        stats[name].sales += lt;
+        stats[name].units += it.qty;
         if(phone) stats[name].buyerCounts[phone] = (stats[name].buyerCounts[phone]||0) + 1;
       });
     });
@@ -2312,6 +2334,8 @@
     });
 
     document.getElementById('profitEmptyMsg').style.display = rows.length ? 'none' : 'block';
+    const pnote = document.getElementById('profitInvalidNote');
+    if(pnote){ pnote.style.display = profitInvalidLines ? 'block' : 'none'; pnote.textContent = profitInvalidLines ? ('Excluded: ' + profitInvalidLines + ' item line(s) with an invalid price or quantity.') : ''; }
     document.getElementById('profitTable').style.display = rows.length ? 'table' : 'none';
 
     tbody.innerHTML = rows.map(r => {
@@ -2339,7 +2363,7 @@
 
     const {start, end} = getProfitDateBounds();
     const inRangeOrders = ORDERS.filter(o => o.createdAt >= start && o.createdAt < end && o.status !== 'cancelled');
-    const customerOrderCounts = {};
+    const customerOrderCounts = Object.create(null);
     inRangeOrders.forEach(o => {
       const phone = (o.phone||'').trim();
       if(!phone) return;
@@ -2372,7 +2396,7 @@
       }, err => {
         console.warn('Debtors load failed:', err);
         const el = document.getElementById('debtorsList');
-        if(el) el.innerHTML = '<p style="font-size:0.85rem; color:rgba(23,20,18,0.5);">Could not load debtors: ' + err.message + '</p>';
+        if(el) el.innerHTML = '<p style="font-size:0.85rem; color:rgba(23,20,18,0.5);">Could not load debtors: ' + RS.esc(err.message) + '</p>';
       });
   }
 
@@ -2427,7 +2451,7 @@
         const overdue = isDebtorOverdue(d);
         const dueText = d.dueDate ? new Date(d.dueDate).toLocaleDateString() : 'No due date';
         return `
-        <div class="admin-row" style="align-items:flex-start; cursor:pointer;" onclick="openDebtorProfile('${d.docId}')">
+        <div class="admin-row" style="align-items:flex-start; cursor:pointer;" data-act="debtor-open" data-id="${esc(d.docId)}">
           <div>
             <strong>${(d.customerName||'').replace(/</g,'&lt;')}</strong>
             <span class="status-badge ${debtorBadgeClass(d.status)}">${debtorStatusLabel(d.status)}</span>
@@ -2481,6 +2505,7 @@
   function convertOrderToDebtor(docId){
     const o = ORDERS.find(x => x.docId === docId);
     if(!o) return;
+    if(!orderTotalValid(o)){ alert('This order has an invalid total, so nothing was prepared.'); return; }
     const itemsText = (o.items||[]).map(it => `${it.qty}x ${it.name}`).join(', ');
     openDebtorForm({
       customerName: o.customerName, phone: o.phone, location: o.address,
@@ -2541,7 +2566,7 @@
     const payments = d.payments || [];
     const paymentsHtml = payments.length ? payments.slice().sort((a,b)=>b.date-a.date).map(p => `
       <div style="padding:10px 0; border-bottom:1px solid var(--line); font-size:0.82rem;">
-        <strong>GHC ${p.amount.toFixed(2)}</strong> — ${p.method||''} ${p.reference ? '· Ref: '+p.reference.replace(/</g,'&lt;') : ''}<br>
+        <strong>${money(p.amount)}</strong> — ${esc(p.method||'')} ${p.reference ? '· Ref: '+p.reference.replace(/</g,'&lt;') : ''}<br>
         <span style="color:rgba(23,20,18,0.55);">${new Date(p.date).toLocaleDateString()}${p.notes ? ' — '+p.notes.replace(/</g,'&lt;') : ''}</span>
       </div>`).join('') : '<p style="font-size:0.82rem; color:rgba(23,20,18,0.5);">No payments recorded yet.</p>';
 
@@ -2567,10 +2592,10 @@
         <div class="analytics-card"><div class="num">GHC ${outstanding.toFixed(2)}</div><div class="lbl">Outstanding</div></div>
       </div>
       <div class="order-detail-actions" style="margin-bottom:20px;">
-        ${outstanding > 0 ? `<button onclick="openDebtorPayment('${d.docId}')">Record Payment</button>` : ''}
-        <button onclick="printDebtorReceipt('${d.docId}')">Print Receipt</button>
-        <button onclick="closeDebtorProfile(); openDebtorForm(getDebtorEditPrefill('${d.docId}'))">Edit Details</button>
-        <button class="danger" onclick="deleteDebtor('${d.docId}')">Delete Record</button>
+        ${outstanding > 0 ? `<button data-act="debtor-pay" data-id="${esc(d.docId)}">Record Payment</button>` : ''}
+        <button data-act="debtor-receipt" data-id="${esc(d.docId)}">Print Receipt</button>
+        <button data-act="debtor-edit" data-id="${esc(d.docId)}">Edit Details</button>
+        <button class="danger" data-act="debtor-delete" data-id="${esc(d.docId)}">Delete Record</button>
       </div>
       <h4 style="font-size:0.95rem; margin-bottom:8px;">Payment History</h4>
       ${paymentsHtml}
@@ -2653,7 +2678,7 @@
         <img src="assets/logo.png" alt="MLuna Shop">
         <div><h2>MLuna Shop</h2><p>Makavo Junction, Accra-Lome Rd &middot; +233 20 765 7029</p></div>
       </div>
-      <div class="invoice-meta"><div><strong>Receipt:</strong> ${invNo}</div><div><strong>Date:</strong> ${new Date().toLocaleString()}</div></div>
+      <div class="invoice-meta"><div><strong>Receipt:</strong> ${esc(invNo)}</div><div><strong>Date:</strong> ${new Date().toLocaleString()}</div></div>
       <div class="invoice-meta">
         <div><strong>Customer:</strong> ${(d.customerName||'').replace(/</g,'&lt;')}</div>
         <div><strong>Phone:</strong> ${(d.phone||'').replace(/</g,'&lt;')}</div>
@@ -2672,6 +2697,46 @@
   function closeDebtorReceipt(){
     document.getElementById('debtorReceiptModal').classList.remove('open');
   }
+
+  // Delegated handlers replace data-derived inline onclick/onchange attributes (Phase 1B).
+  document.addEventListener('click', function(e){
+    const t = (e.target && e.target.closest) ? e.target.closest('[data-act]') : null;
+    if(!t || t.tagName === 'SELECT' || t.tagName === 'INPUT') return;
+    const a = t.dataset.act, id = t.dataset.id, cat = t.dataset.cat, i = parseInt(t.dataset.i, 10);
+    const productOk = () => HAS(PRODUCTS, cat) && Array.isArray(PRODUCTS[cat]) && !!PRODUCTS[cat][i];
+    const delta = parseInt(t.dataset.delta, 10);
+    const deltaOk = delta === 1 || delta === -1;
+    switch(a){
+      case 'jump': jumpToProduct(t.dataset.name); break;
+      case 'product-edit': if(productOk()) editProduct(cat, i); break;
+      case 'product-archive': if(productOk()) toggleArchiveProduct(cat, i); break;
+      case 'product-delete': if(productOk()) deleteProduct(cat, i); break;
+      case 'product-qty': if(productOk() && deltaOk) adjustQuantity(cat, i, delta); break;
+      case 'combo-adjust': if(productOk() && deltaOk) adjustComboQty(cat, i, t.dataset.key, delta); break;
+      case 'order-notify': notifyCustomer(id); break;
+      case 'order-invoice': openInvoice(id); break;
+      case 'order-debtor': convertOrderToDebtor(id); break;
+      case 'order-delete': deleteOrder(id); break;
+      case 'review-status': if(t.dataset.status === 'approved' || t.dataset.status === 'rejected') setReviewStatus(id, t.dataset.status); break;
+      case 'review-feature': toggleFeatureReview(id, t.dataset.featured === 'true'); break;
+      case 'review-delete': deleteReviewAdmin(id); break;
+      case 'debtor-open': openDebtorProfile(id); break;
+      case 'debtor-pay': openDebtorPayment(id); break;
+      case 'debtor-receipt': printDebtorReceipt(id); break;
+      case 'debtor-edit': closeDebtorProfile(); openDebtorForm(getDebtorEditPrefill(id)); break;
+      case 'debtor-delete': deleteDebtor(id); break;
+    }
+  });
+  document.addEventListener('change', function(e){
+    const t = e.target;
+    if(!t || !t.dataset) return;
+    if(t.dataset.act === 'order-status' && ORDER_STATUSES.indexOf(t.value) !== -1) updateOrderStatus(t.dataset.id, t.value);
+    else if(t.dataset.act === 'product-status' && ['in_stock','out_of_stock','coming_soon'].indexOf(t.value) !== -1){
+      const cat = t.dataset.cat, i = parseInt(t.dataset.i, 10);
+      if(HAS(PRODUCTS, cat) && Array.isArray(PRODUCTS[cat]) && PRODUCTS[cat][i]) updateProductStatus(cat, i, t.value);
+    }
+    else if(t.dataset.act === 'combo-stock') pendingComboStock[t.dataset.key] = Number(t.value);
+  });
 
   initFirebase();
 </script>

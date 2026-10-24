@@ -846,7 +846,14 @@
   };
 </script>
 <script src="https://js.paystack.co/v1/inline.js"></script>
+<script src="lib/render-safety.js"></script>
 <script>
+  const RS = RenderSafety;
+  const HAS = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+  function priceOk(v){ const n = RS.num(v); return n !== null && n >= 0; }
+  function stockQty(v){ if(v === undefined || v === null) return null; const n = RS.num(v); return n === null ? 0 : n; }
+  function availLabel(state){ return state === 'coming_soon' ? 'Coming Soon' : state === 'out_of_stock' ? 'Out of Stock' : state === 'unavailable' ? 'Unavailable' : 'Secure Your Piece'; }
+
   const DEFAULT_PRODUCTS = {
     skin: [
       {n:"Skin Care Combo", note:"Vitamin C, Retinol, Salicylic & Collagen series", price:450, old:480},
@@ -931,16 +938,17 @@
   }
 
   function computeAvailability(p, key){
+    if(!priceOk(p.price)) return {state:'unavailable'};
     if(p.status === 'coming_soon') return {state:'coming_soon'};
     if(p.status === 'out_of_stock') return {state:'out_of_stock'};
     if(p.optionGroups && p.optionGroups.length){
       const opts = selectedOptionChoice[key] || {};
       const comboKey = buildComboKey(opts);
-      const qty = (p.comboStock && p.comboStock[comboKey] !== undefined) ? p.comboStock[comboKey] : null;
+      const qty = (p.comboStock && p.comboStock[comboKey] !== undefined) ? stockQty(p.comboStock[comboKey]) : null;
       if(qty !== null && qty <= 0) return {state:'out_of_stock'};
       return {state:'in_stock', qty};
     } else {
-      const qty = (p.quantity !== undefined && p.quantity !== null) ? p.quantity : null;
+      const qty = stockQty(p.quantity);
       if(qty !== null && qty <= 0) return {state:'out_of_stock'};
       return {state:'in_stock', qty};
     }
@@ -956,7 +964,7 @@
       btn.disabled = disabled;
       btn.classList.toggle('disabled', disabled);
       if(!btn.classList.contains('added')){
-        btn.textContent = avail.state==='coming_soon' ? 'Coming Soon' : avail.state==='out_of_stock' ? 'Out of Stock' : 'Secure Your Piece';
+        btn.textContent = availLabel(avail.state);
       }
     }
     const badge = document.getElementById('badge-'+cat+'-'+i);
@@ -983,66 +991,73 @@
   function productCardHtml(cat, i){
     const p = PRODUCTS[cat][i];
     const key = cat+'|'+i;
-    const hasVariants = p.variants && p.variants.length > 0;
-    const vIdx = selectedVariantIndex[key] || 0;
-    const cover = hasVariants ? p.variants[vIdx].image : ((p.images && p.images[0]) ? p.images[0] : null);
+    const catA = RS.esc(cat);
+    const variants = Array.isArray(p.variants) ? p.variants : [];
+    const hasVariants = variants.length > 0;
+    const vSel = selectedVariantIndex[key] || 0;
+    const vIdx = vSel < variants.length ? vSel : 0;
+    const cover = RS.safeUrl(hasVariants ? (variants[vIdx] && variants[vIdx].image) : ((p.images && p.images[0]) ? p.images[0] : null));
     const imgHtml = cover
-      ? `<img id="cardimg-${cat}-${i}" src="${cover.replace(/"/g,'&quot;')}" alt="${p.n.replace(/"/g,'&quot;')}" class="card-img" onclick="openProductLightbox('${cat}',${i})">`
-      : `<div class="card-img-placeholder">${p.n.replace(/"/g,'&quot;')}</div>`;
+      ? `<img id="cardimg-${catA}-${i}" src="${RS.esc(cover)}" alt="${RS.esc(p.n)}" class="card-img" data-act="lightbox" data-cat="${catA}" data-i="${i}">`
+      : `<div class="card-img-placeholder">${RS.esc(p.n)}</div>`;
     const variantHtml = hasVariants ? `
-        <div class="variant-row" id="variants-${cat}-${i}">
-          ${p.variants.map((v,vi) => `<span class="variant-dot${vi===vIdx?' active':''}" title="${v.color.replace(/"/g,'&quot;')}" style="background-image:url('${v.image.replace(/'/g,"%27")}')" onclick="event.stopPropagation(); selectVariant('${cat}',${i},${vi},this)"></span>`).join('')}
+        <div class="variant-row" id="variants-${catA}-${i}">
+          ${variants.map((v,vi) => { const vu = RS.safeUrl(v && v.image); return `<span class="variant-dot${vi===vIdx?' active':''}" title="${RS.esc(v && v.color)}"${vu ? ` style="background-image:url('${RS.esc(vu)}')"` : ''} data-act="variant" data-cat="${catA}" data-i="${i}" data-vi="${vi}"></span>`; }).join('')}
         </div>` : '';
 
-    const optionGroups = p.optionGroups || [];
+    const optionGroups = Array.isArray(p.optionGroups) ? p.optionGroups : [];
     if(optionGroups.length){
       if(!selectedOptionChoice[key]) selectedOptionChoice[key] = {};
       optionGroups.forEach(g => {
-        if(!selectedOptionChoice[key][g.name] && g.choices && g.choices.length){
+        if(g && !selectedOptionChoice[key][g.name] && Array.isArray(g.choices) && g.choices.length){
           selectedOptionChoice[key][g.name] = g.choices[0];
         }
       });
     }
     const optionsHtml = optionGroups.length ? optionGroups.map((g, gi) => {
-      const current = selectedOptionChoice[key] ? selectedOptionChoice[key][g.name] : null;
-      if(g.choices.length > 8){
+      const choices = (g && Array.isArray(g.choices)) ? g.choices.map(c => String(c)) : [];
+      const current = (g && selectedOptionChoice[key]) ? selectedOptionChoice[key][g.name] : null;
+      const cur = (current === null || current === undefined) ? null : String(current);
+      const gname = RS.esc(g && g.name);
+      if(choices.length > 8){
         return `
         <div class="option-block">
-          <div class="option-label">${g.name}</div>
-          <select class="option-select" id="optgroup-${cat}-${i}-${gi}" onchange="event.stopPropagation(); selectOptionChoice('${cat}',${i},${gi}, this.value, this)">
-            ${g.choices.map(c => `<option value="${c.replace(/"/g,'&quot;')}"${c===current?' selected':''}>${c}</option>`).join('')}
+          <div class="option-label">${gname}</div>
+          <select class="option-select" id="optgroup-${catA}-${i}-${gi}" data-act="option-select" data-cat="${catA}" data-i="${i}" data-gi="${gi}">
+            ${choices.map(c => `<option value="${RS.esc(c)}"${c===cur?' selected':''}>${RS.esc(c)}</option>`).join('')}
           </select>
         </div>`;
       }
       return `
         <div class="option-block">
-          <div class="option-label">${g.name}</div>
-          <div class="option-pill-row" id="optgroup-${cat}-${i}-${gi}">
-            ${g.choices.map(c => `<span class="option-pill${c===current?' active':''}" onclick="event.stopPropagation(); selectOptionChoice('${cat}',${i},${gi},'${c.replace(/'/g,"\\'")}',this)">${c}</span>`).join('')}
+          <div class="option-label">${gname}</div>
+          <div class="option-pill-row" id="optgroup-${catA}-${i}-${gi}">
+            ${choices.map(c => `<span class="option-pill${c===cur?' active':''}" data-act="option-pill" data-cat="${catA}" data-i="${i}" data-gi="${gi}" data-choice="${RS.esc(c)}">${RS.esc(c)}</span>`).join('')}
           </div>
         </div>`;
     }).join('') : '';
 
     const avail = computeAvailability(p, key);
-    const badgeHtml = `<span id="badge-${cat}-${i}" class="stock-badge ${avail.state==='coming_soon'?'stock-soon':'stock-oos'}" style="display:${(avail.state==='coming_soon'||avail.state==='out_of_stock')?'inline-block':'none'}">${avail.state==='coming_soon'?'Coming Soon':'Out of Stock'}</span>`;
-    const lowStockHtml = `<span id="lowstock-${cat}-${i}" class="stock-low" style="display:${(avail.state==='in_stock' && avail.qty!==null && avail.qty!==undefined && avail.qty<=5)?'inline':'none'}">Only ${avail.qty!==null&&avail.qty!==undefined?avail.qty:''} left</span>`;
+    const badgeHtml = `<span id="badge-${catA}-${i}" class="stock-badge ${avail.state==='coming_soon'?'stock-soon':'stock-oos'}" style="display:${(avail.state==='coming_soon'||avail.state==='out_of_stock')?'inline-block':'none'}">${avail.state==='coming_soon'?'Coming Soon':'Out of Stock'}</span>`;
+    const lowStockHtml = `<span id="lowstock-${catA}-${i}" class="stock-low" style="display:${(avail.state==='in_stock' && avail.qty!==null && avail.qty!==undefined && avail.qty<=5)?'inline':'none'}">Only ${RS.esc(avail.qty!==null&&avail.qty!==undefined?avail.qty:'')} left</span>`;
     const btnDisabled = avail.state !== 'in_stock';
-    const btnLabel = avail.state === 'coming_soon' ? 'Coming Soon' : avail.state === 'out_of_stock' ? 'Out of Stock' : 'Secure Your Piece';
+    const okNow = priceOk(p.price);
+    const okOld = priceOk(p.old);
 
     return `
       <div class="card">
         ${imgHtml}
         <div class="card-body">
-          <h3>${p.n}${badgeHtml}</h3>
-          <div class="note">${p.note}</div>
+          <h3>${RS.esc(p.n)}${badgeHtml}</h3>
+          <div class="note">${RS.esc(p.note)}</div>
           ${variantHtml}
           ${optionsHtml}
           <div class="price-row">
-            <span class="price price-now">GHC ${p.price.toFixed(2)}</span>
-            <span class="price price-old">GHC ${p.old.toFixed(2)}</span>
+            <span class="price price-now">${okNow ? RS.money(p.price) : 'Price unavailable'}</span>
+            ${okOld ? `<span class="price price-old">${RS.money(p.old)}</span>` : ''}
             ${lowStockHtml}
           </div>
-          <button class="add-btn${btnDisabled?' disabled':''}" id="btn-${cat}-${i}" ${btnDisabled?'disabled':''} onclick="addToCart('${cat}',${i}, this)">${btnLabel}</button>
+          <button class="add-btn${btnDisabled?' disabled':''}" id="btn-${catA}-${i}" ${btnDisabled?'disabled':''} data-act="add" data-cat="${catA}" data-i="${i}">${availLabel(avail.state)}</button>
         </div>
       </div>`;
   }
@@ -1052,7 +1067,8 @@
     selectedVariantIndex[key] = vIdx;
     const p = PRODUCTS[cat][i];
     const imgEl = document.getElementById('cardimg-'+cat+'-'+i);
-    if(imgEl && p.variants[vIdx]) imgEl.src = p.variants[vIdx].image;
+    const vsrc = RS.safeUrl(p.variants[vIdx] && p.variants[vIdx].image);
+    if(imgEl && vsrc) imgEl.src = vsrc;
     const row = document.getElementById('variants-'+cat+'-'+i);
     if(row){
       row.querySelectorAll('.variant-dot').forEach(d => d.classList.remove('active'));
@@ -1061,8 +1077,8 @@
     if(p.optionGroups && p.optionGroups.length){
       const colourGroupIdx = p.optionGroups.findIndex(g => /^colou?r$/i.test(g.name));
       if(colourGroupIdx > -1){
-        const vcolor = p.variants[vIdx].color || '';
-        const choiceMatch = p.optionGroups[colourGroupIdx].choices.find(c => c.toLowerCase() === vcolor.toLowerCase());
+        const vcolor = String(p.variants[vIdx].color || '');
+        const choiceMatch = p.optionGroups[colourGroupIdx].choices.find(c => String(c).toLowerCase() === vcolor.toLowerCase());
         if(choiceMatch){
           if(!selectedOptionChoice[key]) selectedOptionChoice[key] = {};
           selectedOptionChoice[key][p.optionGroups[colourGroupIdx].name] = choiceMatch;
@@ -1089,11 +1105,12 @@
       el.classList.add('active');
     }
     if(/^colou?r$/i.test(g.name) && p.variants && p.variants.length){
-      const matchIdx = p.variants.findIndex(v => v.color && v.color.toLowerCase() === choice.toLowerCase());
+      const matchIdx = p.variants.findIndex(v => v.color && String(v.color).toLowerCase() === String(choice).toLowerCase());
       if(matchIdx > -1){
         selectedVariantIndex[key] = matchIdx;
         const imgEl = document.getElementById('cardimg-'+cat+'-'+i);
-        if(imgEl) imgEl.src = p.variants[matchIdx].image;
+        const msrc = RS.safeUrl(p.variants[matchIdx].image);
+        if(imgEl && msrc) imgEl.src = msrc;
         const vrow = document.getElementById('variants-'+cat+'-'+i);
         if(vrow){
           vrow.querySelectorAll('.variant-dot').forEach((d,di) => d.classList.toggle('active', di===matchIdx));
@@ -1123,12 +1140,12 @@
     const customCats = Object.keys(PRODUCTS).filter(cat => !fixedCats.includes(cat));
     if(customCats.length === 0){ container.innerHTML = ''; return; }
     container.innerHTML = customCats.map(cat => {
-      const label = customCategoryLabels[cat] || cat;
+      const label = HAS(customCategoryLabels, cat) ? customCategoryLabels[cat] : cat;
       return `
-      <section class="cat" id="${cat}">
-        <div class="cat-head"><div class="moon p5"></div><h2>${label}</h2></div>
+      <section class="cat" id="${RS.esc(cat)}">
+        <div class="cat-head"><div class="moon p5"></div><h2>${RS.esc(label)}</h2></div>
         <p class="cat-sub">Newly added collection.</p>
-        <div class="grid" id="grid-${cat}"></div>
+        <div class="grid" id="grid-${RS.esc(cat)}"></div>
       </section>`;
     }).join('');
     customCats.forEach(cat => {
@@ -1145,8 +1162,9 @@
     renderDynamicCategories();
     const ritualP = PRODUCTS.skin && PRODUCTS.skin[0];
     const ritualImgEl = document.getElementById('ritualImg');
-    if(ritualImgEl && ritualP && ritualP.images && ritualP.images[0]){
-      ritualImgEl.src = ritualP.images[0];
+    const ritualSrc = (ritualP && ritualP.images) ? RS.safeUrl(ritualP.images[0]) : '';
+    if(ritualImgEl && ritualSrc){
+      ritualImgEl.src = ritualSrc;
       ritualImgEl.style.display = 'block';
     }
     if(ritualP){
@@ -1155,7 +1173,7 @@
         const availR = computeAvailability(ritualP, 'skin|0');
         ritualBtn.disabled = availR.state !== 'in_stock';
         ritualBtn.classList.toggle('disabled', availR.state !== 'in_stock');
-        ritualBtn.textContent = availR.state==='coming_soon' ? 'Coming Soon' : availR.state==='out_of_stock' ? 'Out of Stock' : 'Elevate Your Ritual';
+        ritualBtn.textContent = availR.state === 'in_stock' ? 'Elevate Your Ritual' : availLabel(availR.state);
       }
     }
     if(currentCategoryPage) renderCategoryPageGrid(currentCategoryPage);
@@ -1167,10 +1185,10 @@
     if(updateUrl === undefined) updateUrl = true;
     currentPageName = 'category';
     currentCategoryPage = cat;
-    const info = CATEGORY_PAGE_INFO[cat] || {title: (customCategoryLabels[cat] || cat), sub:''};
+    const info = HAS(CATEGORY_PAGE_INFO, cat) ? CATEGORY_PAGE_INFO[cat] : {title: (HAS(customCategoryLabels, cat) ? customCategoryLabels[cat] : cat), sub:''};
     document.getElementById('categoryPageTitle').textContent = info.title;
     document.getElementById('categoryPageSub').textContent = info.sub;
-    const heroUrl = CATEGORY_HERO_IMAGES[cat];
+    const heroUrl = HAS(CATEGORY_HERO_IMAGES, cat) ? CATEGORY_HERO_IMAGES[cat] : null;
     document.getElementById('categoryHero').style.backgroundImage = heroUrl ? `url('${heroUrl}')` : 'none';
     renderCategoryPageGrid(cat);
     showPage('category', false, skipScrollTop);
@@ -1178,7 +1196,7 @@
   }
   function renderCategoryPageGrid(cat){
     const grid = document.getElementById('categoryPageGrid');
-    if(grid && PRODUCTS[cat]) grid.innerHTML = productCardsHtml(cat);
+    if(grid && HAS(PRODUCTS, cat)) grid.innerHTML = productCardsHtml(cat);
   }
 
   function openSearch(){
@@ -1199,13 +1217,13 @@
     for(const cat in PRODUCTS){
       PRODUCTS[cat].forEach((p,i) => {
         if(p.archived) return;
-        if(p.n.toLowerCase().includes(q) || (p.note||'').toLowerCase().includes(q)){
+        if(String(p.n||'').toLowerCase().includes(q) || String(p.note||'').toLowerCase().includes(q)){
           html += productCardHtml(cat, i);
           count++;
         }
       });
     }
-    el.innerHTML = count ? html : `<p class="search-empty">No products matching "${query}" — try a different word.</p>`;
+    el.innerHTML = count ? html : `<p class="search-empty">No products matching "${RS.esc(query)}" — try a different word.</p>`;
   }
 
   let db = null;
@@ -1263,7 +1281,7 @@
     const key = cat+'|'+i;
     const avail = computeAvailability(p, key);
     if(avail.state !== 'in_stock'){
-      alert(avail.state === 'coming_soon' ? 'This item is coming soon and not yet available to order.' : 'Sorry, this item (or the selected option) is currently out of stock.');
+      alert(avail.state === 'coming_soon' ? 'This item is coming soon and not yet available to order.' : avail.state === 'unavailable' ? 'This item is currently unavailable.' : 'Sorry, this item (or the selected option) is currently out of stock.');
       return;
     }
     const hasVariants = p.variants && p.variants.length > 0;
@@ -1289,7 +1307,7 @@
   }
 
   function changeQty(key, delta){
-    if(!cart[key]) return;
+    if(!HAS(cart, key)) return;
     cart[key].qty += delta;
     if(cart[key].qty <= 0) delete cart[key];
     renderCart();
@@ -1312,15 +1330,16 @@
         subtotal += item.price * item.qty;
         count += item.qty;
         const summary = itemOptionSummary(item);
+        const imgU = RS.safeUrl(item.image);
         return `
         <div class="drawer-item">
-          ${item.image ? `<img src="${item.image}" alt="" class="drawer-item-img">` : '<div class="drawer-item-img drawer-item-noimg"></div>'}
+          ${imgU ? `<img src="${RS.esc(imgU)}" alt="" class="drawer-item-img">` : '<div class="drawer-item-img drawer-item-noimg"></div>'}
           <div class="drawer-item-info">
-            <span class="name">${item.n}${summary ? ' — '+summary : ''}</span>
+            <span class="name">${RS.esc(item.n)}${summary ? ' — '+RS.esc(summary) : ''}</span>
             <div class="qty-price">
-              <button class="qty-btn" onclick="changeQty('${key}',-1)">−</button>
-              <span>${item.qty}</span>
-              <button class="qty-btn" onclick="changeQty('${key}',1)">+</button>
+              <button class="qty-btn" data-act="qty" data-key="${RS.esc(key)}" data-delta="-1">−</button>
+              <span>${RS.esc(item.qty)}</span>
+              <button class="qty-btn" data-act="qty" data-key="${RS.esc(key)}" data-delta="1">+</button>
               <span class="price">GHC ${(item.price*item.qty).toFixed(2)}</span>
             </div>
           </div>
@@ -1454,7 +1473,7 @@
     const hash = location.hash.replace('#','');
     if(!hash || hash === 'shop'){ showPage('shop', false); }
     else if(hash === 'wholesale'){ showPage('wholesale', false); }
-    else if(PRODUCTS[hash]){ showCategoryPage(hash, false); }
+    else if(HAS(PRODUCTS, hash)){ showCategoryPage(hash, false); }
     else { showPage('shop', false); }
   }
   window.addEventListener('popstate', handleRoute);
@@ -1517,7 +1536,7 @@
 
   function openProductLightbox(cat, i){
     const p = PRODUCTS[cat][i];
-    currentLightboxImages = (p.images && p.images.length) ? p.images : [];
+    currentLightboxImages = (Array.isArray(p.images) ? p.images : []).map(function(u){ return RS.safeUrl(u); }).filter(Boolean);
     if(currentLightboxImages.length === 0) return;
     currentLightboxIndex = 0;
     currentLightboxName = (p.n || 'mluna-shop-product').toLowerCase().replace(/[^a-z0-9]+/g,'-');
@@ -1660,20 +1679,23 @@
     const listEl = document.getElementById('reviewsList');
     const avgEl = document.getElementById('reviewsAvg');
     if(!listEl) return;
-    if(REVIEWS.length === 0){
+    const valid = REVIEWS.filter(r => r && RS.rating(r.rating) !== null && typeof r.comment === 'string' && typeof r.name === 'string');
+    if(valid.length === 0){
       listEl.innerHTML = '<p class="reviews-empty">Be the first to leave a review.</p>';
       avgEl.textContent = 'No reviews yet';
       return;
     }
-    const avg = (REVIEWS.reduce((s,r)=> s + r.rating, 0) / REVIEWS.length).toFixed(1);
-    avgEl.innerHTML = `<span class="stars">${'★'.repeat(Math.round(avg))}${'☆'.repeat(5-Math.round(avg))}</span> ${avg} (${REVIEWS.length} review${REVIEWS.length===1?'':'s'})`;
-    const sorted = [...REVIEWS].sort((a,b) => (b.featured?1:0) - (a.featured?1:0) || b.createdAt - a.createdAt);
+    const avgNum = valid.reduce((s,r)=> s + r.rating, 0) / valid.length;
+    const avg = avgNum.toFixed(1);
+    const rounded = Math.min(5, Math.max(0, Math.round(avgNum)));
+    avgEl.innerHTML = `<span class="stars">${'★'.repeat(rounded)}${'☆'.repeat(5-rounded)}</span> ${avg} (${valid.length} review${valid.length===1?'':'s'})`;
+    const sorted = [...valid].sort((a,b) => (b.featured?1:0) - (a.featured?1:0) || (b.createdAt||0) - (a.createdAt||0));
     listEl.innerHTML = sorted.slice(0,8).map(r => `
       <div class="review-card${r.featured?' featured':''}">
         ${r.featured ? '<span class="featured-tag">Featured</span>' : ''}
         <div class="stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
-        <p class="comment">"${r.comment.replace(/</g,'&lt;')}"</p>
-        <div class="meta">— ${r.name.replace(/</g,'&lt;')}${r.product ? ', on '+r.product.replace(/</g,'&lt;') : ''}</div>
+        <p class="comment">"${RS.esc(r.comment)}"</p>
+        <div class="meta">— ${RS.esc(r.name)}${(typeof r.product === 'string' && r.product) ? ', on '+RS.esc(r.product) : ''}</div>
       </div>`).join('');
   }
 
@@ -1698,7 +1720,7 @@
     let saved = null;
     try{ saved = JSON.parse(sessionStorage.getItem('mlunaSiteState') || 'null'); }catch(e){}
     if(!saved) return false;
-    if(saved.page === 'category' && saved.cat && PRODUCTS[saved.cat]){
+    if(saved.page === 'category' && saved.cat && HAS(PRODUCTS, saved.cat)){
       showCategoryPage(saved.cat, false, true);
     } else if(saved.page === 'wholesale'){
       showPage('wholesale', false, true);
@@ -1716,6 +1738,29 @@
     if(restoreSiteState()) return;
     handleRoute();
   }
+
+  // Delegated handlers replace data-derived inline onclick/onchange attributes.
+  document.addEventListener('click', function(e){
+    const t = (e.target && e.target.closest) ? e.target.closest('[data-act]') : null;
+    if(!t || t.tagName === 'SELECT') return;
+    const act = t.dataset.act, cat = t.dataset.cat, i = parseInt(t.dataset.i, 10);
+    if(act === 'qty'){
+      const delta = parseInt(t.dataset.delta, 10);
+      if(HAS(cart, t.dataset.key) && (delta === 1 || delta === -1)) changeQty(t.dataset.key, delta);
+      return;
+    }
+    if(!HAS(PRODUCTS, cat) || !Array.isArray(PRODUCTS[cat]) || !PRODUCTS[cat][i]) return;
+    if(act === 'lightbox') openProductLightbox(cat, i);
+    else if(act === 'variant') selectVariant(cat, i, parseInt(t.dataset.vi, 10), t);
+    else if(act === 'option-pill') selectOptionChoice(cat, i, parseInt(t.dataset.gi, 10), t.dataset.choice, t);
+    else if(act === 'add') addToCart(cat, i, t);
+  });
+  document.addEventListener('change', function(e){
+    const t = e.target;
+    if(!t || !t.dataset || t.dataset.act !== 'option-select') return;
+    const cat = t.dataset.cat, i = parseInt(t.dataset.i, 10);
+    if(HAS(PRODUCTS, cat) && Array.isArray(PRODUCTS[cat]) && PRODUCTS[cat][i]) selectOptionChoice(cat, i, parseInt(t.dataset.gi, 10), t.value, t);
+  });
 
   renderCatalogue();
   initFirebase();
