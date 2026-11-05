@@ -1,0 +1,47 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
+    // Public storefront catalog. Only the verified administrator can modify it.
+    match /products/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Public checkout submission; only administrators can inspect or manage orders.
+    match /orders/{docId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Public lead submission; only administrators can inspect or manage leads.
+    match /leads/{docId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Public review submission; only approved reviews are publicly readable.
+    match /reviews/{docId} {
+      allow create: if true;
+      allow read: if isAdmin() || resource.data.status == 'approved';
+      allow update, delete: if isAdmin();
+    }
+
+    // Business operations data: administrator only.
+    match /debtors/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /suppliers/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /purchaseOrders/{docId} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
