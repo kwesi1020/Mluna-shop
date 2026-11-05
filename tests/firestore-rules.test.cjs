@@ -9,7 +9,6 @@ const {
   assertFails
 } = require('@firebase/rules-unit-testing');
 const {
-  collection,
   deleteDoc,
   doc,
   getDoc,
@@ -112,8 +111,16 @@ test('ordinary authenticated users cannot read or manage protected business data
     'orders', 'leads', 'debtors', 'suppliers', 'purchaseOrders'
   ]) {
     await assertFails(getDoc(doc(db, collectionName, 'private-seed')));
+  }
+
+  for (const collectionName of ['debtors', 'suppliers', 'purchaseOrders']) {
     await assertFails(setDoc(doc(db, collectionName, 'forbidden-write'), { status: 'x' }));
   }
+
+  // Public submissions are intentionally allowed even for signed-in non-admin users.
+  await assertSucceeds(setDoc(doc(db, 'orders', 'ordinary-public-order'), { status: 'pending' }));
+  await assertSucceeds(setDoc(doc(db, 'leads', 'ordinary-public-lead'), { source: 'test' }));
+  await assertSucceeds(setDoc(doc(db, 'reviews', 'ordinary-public-review'), { status: 'pending' }));
 
   await assertFails(getDoc(doc(db, 'reviews', 'pending-seed')));
   await assertFails(updateDoc(doc(db, 'reviews', 'approved-seed'), { status: 'pending' }));
@@ -127,8 +134,16 @@ test('signed-out visitors cannot read or manage protected business data', async 
     'orders', 'leads', 'debtors', 'suppliers', 'purchaseOrders'
   ]) {
     await assertFails(getDoc(doc(db, collectionName, 'private-seed')));
+  }
+
+  for (const collectionName of ['debtors', 'suppliers', 'purchaseOrders']) {
     await assertFails(setDoc(doc(db, collectionName, 'forbidden-write'), { status: 'x' }));
   }
+
+  // Public submissions remain open to signed-out storefront visitors.
+  await assertSucceeds(setDoc(doc(db, 'orders', 'visitor-public-order'), { status: 'pending' }));
+  await assertSucceeds(setDoc(doc(db, 'leads', 'visitor-public-lead'), { source: 'test' }));
+  await assertSucceeds(setDoc(doc(db, 'reviews', 'visitor-public-review'), { status: 'pending' }));
 
   await assertFails(getDoc(doc(db, 'reviews', 'pending-seed')));
   await assertFails(updateDoc(doc(db, 'reviews', 'approved-seed'), { status: 'pending' }));
