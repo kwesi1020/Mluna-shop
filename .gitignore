@@ -1,0 +1,4 @@
+node_modules/
+*.log
+audit-report.json
+production-audit.json
