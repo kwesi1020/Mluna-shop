@@ -752,10 +752,28 @@
     if(!window.firebase || !firebaseConfig || firebaseConfig.apiKey.includes('YOUR_')) return;
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
-    firebase.auth().onAuthStateChanged(user => {
-      document.getElementById('loginBox').style.display = user ? 'none' : 'block';
-      document.getElementById('adminPanel').style.display = user ? 'block' : 'none';
-      if(user){
+    firebase.auth().onAuthStateChanged(async user => {
+      const loginBox = document.getElementById('loginBox');
+      const adminPanel = document.getElementById('adminPanel');
+      adminPanel.style.display = 'none';
+      loginBox.style.display = user ? 'none' : 'block';
+
+      if(!user) return;
+
+      try {
+        const tokenResult = await user.getIdTokenResult(true);
+        const emailMatches = (user.email || '').toLowerCase() === 'mawuenaagbogah0@gmail.com';
+        const uidMatches = user.uid === 'ox0mUbjbv9QFIKQO8JdqAqJ68uN2';
+        const hasAdminClaim = tokenResult.claims && tokenResult.claims.admin === true;
+
+        if(!emailMatches || !uidMatches || !hasAdminClaim) {
+          await firebase.auth().signOut();
+          alert('This account is not authorized for MLuna administration. Ask the project owner to verify administrator access.');
+          loginBox.style.display = 'block';
+          return;
+        }
+
+        adminPanel.style.display = 'block';
         loadProductsFromFirestore();
         loadLeadsFromFirestore();
         loadOrdersFromFirestore();
@@ -765,6 +783,11 @@
         loadPurchaseOrders();
         setAnalyticsRange('month');
         setProfitRange('month');
+      } catch(error) {
+        console.error('Admin authorization check failed:', error);
+        await firebase.auth().signOut();
+        loginBox.style.display = 'block';
+        alert('Administrator access could not be verified. Please sign in again or contact the project owner.');
       }
     });
   }
