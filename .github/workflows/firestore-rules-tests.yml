@@ -1,0 +1,36 @@
+name: Firestore Rules Tests
+
+on:
+  pull_request:
+    paths:
+      - 'firestore.rules'
+      - 'firebase.json'
+      - 'package.json'
+      - 'tests/firestore-rules.test.cjs'
+      - '.github/workflows/firestore-rules-tests.yml'
+  push:
+    branches:
+      - main
+      - security/admin-custom-claim-gate
+
+permissions:
+  contents: read
+
+jobs:
+  firestore-rules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Run Firestore Emulator rules tests
+        run: npx firebase emulators:exec --only firestore --project mluna-fab51-rules-test "npm run test:firestore-rules"
