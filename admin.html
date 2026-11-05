@@ -1663,7 +1663,7 @@
 
     const supplierKeys = new Set(BATCH1_SUPPLIERS.map(s => s.key));
     const badSupplierKeys = BATCH1_SKUS.filter(i => !supplierKeys.has(i.supplierKey)).map(i => i.sku);
-    if(badSupplierKeys.length === 0){ lines.push('✓ Every item\\'s supplierKey resolves to a defined supplier.'); }
+    if(badSupplierKeys.length === 0){ lines.push("✓ Every item's supplierKey resolves to a defined supplier."); }
     else { pass = false; lines.push('✗ Unresolved supplierKey on: ' + badSupplierKeys.join(', ')); }
 
     const hc = BATCH1_SKUS.find(i => i.sku === 'ML-HC-001');
