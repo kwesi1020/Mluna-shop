@@ -74,6 +74,12 @@
 </script>
 
 <link rel="icon" href="assets/logo.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#171412">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MLuna Shop">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Work+Sans:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -1722,6 +1728,17 @@
   initQrCode();
   initialRoute();
   setupStarPicker();
+</script>
+
+
+<script>
+  // Register the storefront PWA shell. Admin and API requests are excluded by the worker.
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
+        .catch(error => console.warn('MLuna app installation support unavailable:', error));
+    });
+  }
 </script>
 
 </body>

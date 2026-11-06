@@ -7,6 +7,11 @@ on:
       - 'firebase.json'
       - 'package.json'
       - 'tests/firestore-rules.test.cjs'
+      - 'tests/pwa-config.test.cjs'
+      - 'index.html'
+      - 'manifest.webmanifest'
+      - 'service-worker.js'
+      - 'assets/pwa-icon.svg'
       - '.github/workflows/firestore-rules-tests.yml'
   push:
     branches:
@@ -37,6 +42,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
+
+      - name: Run PWA installability configuration tests
+        run: npm run test:pwa
 
       - name: Run Firestore Emulator rules tests
         run: npx firebase emulators:exec --only firestore --project mluna-fab51-rules-test "npm run test:firestore-rules"

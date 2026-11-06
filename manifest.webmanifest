@@ -1,0 +1,22 @@
+{
+  "id": "/",
+  "name": "MLuna Shop",
+  "short_name": "MLuna",
+  "description": "African heritage fashion, beauty and timeless elegance.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone"],
+  "orientation": "portrait-primary",
+  "background_color": "#EFE7DC",
+  "theme_color": "#171412",
+  "categories": ["shopping", "lifestyle"],
+  "icons": [
+    {
+      "src": "/assets/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
