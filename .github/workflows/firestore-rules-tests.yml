@@ -30,7 +30,7 @@ jobs:
           node-version: 22
 
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Run Firestore Emulator rules tests
         run: npx firebase emulators:exec --only firestore --project mluna-fab51-rules-test "npm run test:firestore-rules"
