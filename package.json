@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "test:firestore-rules": "node --test tests/firestore-rules.test.cjs"
+    "test:firestore-rules": "node --test tests/firestore-rules.test.cjs",
+    "test:pwa": "node --test tests/pwa-config.test.cjs"
   },
   "dependencies": {
     "firebase-admin": "14.5.0"
